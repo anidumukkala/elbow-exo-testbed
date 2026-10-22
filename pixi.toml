@@ -1,0 +1,15 @@
+[workspace]
+authors = ["Yuanshao Yang <yyang3051@gatech.edu>"]
+channels = ["conda-forge"]
+name = "elbow-exo-testbed"
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64", "linux-aarch64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.12.*"
+numpy = "<2"
+
+[pypi-dependencies]
+damiao-motor = ">=1.0.6, <2"
