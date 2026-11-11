@@ -2,7 +2,7 @@
 
     from exo.joint import Joint
 
-    with Joint("can0", motor_id=0x05, feedback_id=0x15, log_name="my_test") as joint:
+    with Joint(motor_id=0x05, feedback_id=0x15, log_name="my_test") as joint:  # on config.channel
         joint.resume()              # reuse this power session's homing
         joint.move_to(30.0)         # degrees, 0 = mid-stroke
         joint.hold_until_enter(30.0)
@@ -27,6 +27,8 @@ import statistics
 import time
 from collections import deque
 from dataclasses import dataclass, replace
+from datetime import datetime
+from pathlib import Path
 from typing import Callable, Optional
 
 from damiao_motor import KD_MAX
@@ -34,7 +36,7 @@ from damiao_motor import KD_MAX
 from .calibration import Calibration, CalibrationError
 from .compensation import Compensation
 from .config import JointConfig
-from .logs import TickLog, log, start_run_log
+from .logs import LOG_DIR, LOGGER
 from .loop import RealtimeLoop, enter_pressed
 from .motor import DamiaoMotor
 
@@ -53,22 +55,23 @@ class PushResult:
 
 
 class Joint:
-    def __init__(self, channel: str = "can0", motor_id: int = 0x05, feedback_id: int = 0x15, *,
+    def __init__(self, channel: Optional[str] = None, motor_id: int = 0x05, feedback_id: int = 0x15, *,
                  log_name: str = "joint", rate_hz: Optional[float] = None,
                  config: JointConfig = JointConfig()) -> None:
         """
         Args:
-            channel, motor_id, feedback_id: CAN interface and IDs of the motor.
+            channel: CAN interface of the motor (default: config.channel).
+            motor_id, feedback_id: CAN IDs of the motor.
             log_name: name of this run's log files (logs/<log_name>_<time>.*).
             rate_hz: control loop rate (default: config.rate_hz).
             config: joint parameters (exo/config.py).
         """
         self.config = replace(config, rate_hz=rate_hz) if rate_hz else config
-        self.motor = DamiaoMotor(channel, motor_id, feedback_id, rate_hz=self.config.rate_hz,
+        self.motor = DamiaoMotor(channel or self.config.channel, motor_id, feedback_id, rate_hz=self.config.rate_hz,
                                  torque_trip_nm=self.config.torque_trip_nm,
                                  can_timeout_units=self.config.timeout_unhomed)
         self.log_name = log_name
-        self.log_stem = None  # logs/<log_name>_<time>, set when the block is entered
+        self.log_stem: Optional[Path] = None  # logs/<log_name>_<time>, set when the block is entered
         self.calibration: Optional[Calibration] = None  # set by homing or resume()
         self.compensation: Optional[Compensation] = None  # friction / gravity feedforward
         self.zero_motor_rad = 0.0  # joint angle 0 in the motor's frame
@@ -77,26 +80,28 @@ class Joint:
         self.setpoint_deg = math.nan
         self.setpoint_vel_deg_s = math.nan
         self.lag_deg = math.nan
-        self.tick_log: Optional[TickLog] = None
 
     def __enter__(self) -> "Joint":
-        self.log_stem = start_run_log(self.log_name)
-        self.motor.start()
+        self.log_stem = self._start_log(self.log_name)  # first, so the motor's start-up messages are in the file
+        try:
+            self.motor.start()
+        except BaseException:
+            LOGGER.close()  # __exit__ does not run when entering fails
+            raise
         self.zero_motor_rad = self.motor.position  # until homed: angle 0 = where the joint started
-        self.tick_log = TickLog(self.log_stem.with_suffix(".csv"), self._log_columns())
+        self._track()
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is KeyboardInterrupt:
-            log.error("Stopped by Ctrl-C")
+            LOGGER.error("Stopped by Ctrl-C")
         elif exc_type is not None:
-            log.error(f"ABORTED: {exc_type.__name__}: {exc}")
+            LOGGER.error(f"ABORTED: {exc_type.__name__}: {exc}")
         try:
             self.motor.stop()
         finally:
-            if self.tick_log is not None:
-                self.tick_log.close()
-            log.info(f"Log: {self.log_stem}.csv")
+            LOGGER.close()  # flushes the per-tick CSV
+            LOGGER.info(f"Log: {LOGGER.csv_path}")
 
     # ------------------------------------------------------------------------------------------
     # State (joint units)
@@ -138,7 +143,7 @@ class Joint:
     def update(self) -> None:
         """Send the command, wait for the motor's reply, log this tick and check the stop limits."""
         self.motor.update()
-        self.tick_log.add_row()
+        LOGGER.update()
         if self.is_homed:
             limit = self.calibration.limit_deg + self.config.range_margin_deg
             if abs(self.angle_deg) > limit:
@@ -231,7 +236,7 @@ class Joint:
                                      f"{self.angle_deg:+.1f} deg): obstacle?")
             if t >= duration + settle_s:
                 break
-        self.tick_log.flush()
+        LOGGER.flush_buffer()
         return {"max_lag_deg": max_lag, "peak_torque_nm": peak_torque}
 
     def hold(self, angle_deg: float, seconds: float, phase: str = "hold") -> None:
@@ -241,7 +246,7 @@ class Joint:
             self._hold_step(angle_deg)
             if t >= seconds:
                 break
-        self.tick_log.flush()
+        LOGGER.flush_buffer()
 
     def hold_until_enter(self, angle_deg: float, prompt: str = "", phase: str = "wait") -> None:
         """Hold angle_deg, showing angle and torque, until Enter is pressed."""
@@ -254,7 +259,7 @@ class Joint:
             if i % 20 == 0:
                 print(f"  angle {self.angle_deg:+7.2f} deg | torque {self.torque_nm:+.3f} Nm", end="\r")
         print()
-        self.tick_log.flush()
+        LOGGER.flush_buffer()
 
     def measure_holding_torque(self, seconds: float = 0.5, torque_nm: float = 0.0) -> float:
         """Hold the current angle for `seconds` and return the mean measured torque over the second
@@ -380,14 +385,33 @@ class Joint:
         self.start_session(cal)
         if abs(self.angle_deg) > cal.limit_deg + self.config.range_margin_deg:
             raise CalibrationError(f"joint at {self.angle_deg:+.1f} deg, beyond the stops; home again")
-        log.info(f"Resumed homing from {cal.created} ({cal.method}): joint at {self.angle_deg:+.2f} deg, "
-                 f"stops at +/-{cal.limit_deg:.1f} deg, "
-                 f"{'with' if self.compensation else 'without'} friction/gravity compensation")
+        LOGGER.info(f"Resumed homing from {cal.created} ({cal.method}): joint at {self.angle_deg:+.2f} deg, "
+                    f"stops at +/-{cal.limit_deg:.1f} deg, "
+                    f"{'with' if self.compensation else 'without'} friction/gravity compensation")
         return cal
 
     # ------------------------------------------------------------------------------------------
-    # Log columns (one CSV row per update)
+    # Logging (one CSV row per update)
     # ------------------------------------------------------------------------------------------
+    @staticmethod
+    def _start_log(name: str) -> Path:
+        """Messages and the per-tick CSV to logs/<name>_<date>_<time>.log / .csv (with _2, _3, ...
+        if two runs start within the same second). Returns the path without extension."""
+        LOGGER.reset()  # one shared logger: drop what an earlier run in this Python session tracked
+        LOGGER.set_log_path(LOG_DIR)
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        run = base = f"{name}_{datetime.now():%Y%m%d_%H%M%S}"
+        n = 2
+        while (LOG_DIR / f"{run}.log").exists():
+            run, n = f"{base}_{n}", n + 1
+        LOGGER.set_file_name(run)
+        return LOG_DIR / run
+
+    def _track(self) -> None:
+        """The CSV columns, logged on every update()."""
+        columns = self._log_columns()
+        LOGGER.track_function(list(columns.values()), list(columns))
+
     def _log_columns(self) -> dict:
         m, t0 = self.motor, time.monotonic()
         return {

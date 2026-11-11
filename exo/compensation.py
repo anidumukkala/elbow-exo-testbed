@@ -21,7 +21,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from .logs import log
+from .logs import LOGGER
 
 
 @dataclass
@@ -112,15 +112,15 @@ def run_identification(joint, speeds_deg_s: list, margin_deg: float, accel_deg_s
     joint.move_to(-end, phase="identify start")
     for cruise in speeds_deg_s:
         for target in (+end, -end):
-            log.info(f"  identification sweep to {target:+.0f} deg at {cruise:g} deg/s")
+            LOGGER.info(f"  identification sweep to {target:+.0f} deg at {cruise:g} deg/s")
             joint.move_to(target, cruise, accel_deg_s2, phase=f"identify {cruise:g} deg/s", on_tick=record)
     if len(torques) < 50:
         raise RuntimeError(f"only {len(torques)} samples while cruising; use a longer stroke or lower speeds")
     comp = fit(angles, speeds, torques)
     if comp.coulomb_nm < 0 or comp.viscous_nm_s_rad < 0:
-        log.warning(f"negative friction fitted (dry {comp.coulomb_nm:+.4f} Nm, viscous {comp.viscous_nm_s_rad:+.4f} "
-                    "Nm s/rad): too small to measure here; using 0 for it")
+        LOGGER.warning(f"negative friction fitted (dry {comp.coulomb_nm:+.4f} Nm, "
+                       f"viscous {comp.viscous_nm_s_rad:+.4f} Nm s/rad): too small to measure here; using 0 for it")
         comp.coulomb_nm, comp.viscous_nm_s_rad = max(0.0, comp.coulomb_nm), max(0.0, comp.viscous_nm_s_rad)
     if 2 * end < 60:
-        log.warning("the sweeps cover less than 60 deg: the two gravity terms are poorly separated")
+        LOGGER.warning("the sweeps cover less than 60 deg: the two gravity terms are poorly separated")
     return comp

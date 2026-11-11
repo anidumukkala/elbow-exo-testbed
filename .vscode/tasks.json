@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // Same check/bring-up as new pixi terminals (setup/can_up.sh); used before debugging.
+            "label": "can-up",
+            "detail": "Bring up the motor's CAN interface (JointConfig.channel) in CAN FD mode (sudo only if needed)",
+            "type": "shell",
+            "command": "bash",
+            "args": ["${workspaceFolder}/setup/can_up.sh"],
+            // Plain bash, not the pixi terminal profile (its `-c exec ...` args would swallow the command).
+            "options": {
+                "shell": { "executable": "bash", "args": ["-c"] }
+            },
+            // No CAN on a Mac: skip instead of failing, so debugging still starts (motor-free code only).
+            "osx": {
+                "command": "echo",
+                "args": ["[can_up] macOS: no CAN interfaces, skipped"]
+            },
+            // Focus the task terminal so the sudo password can be typed.
+            "presentation": { "reveal": "always", "focus": true, "panel": "shared", "clear": true },
+            "problemMatcher": []
+        }
+    ]
+}

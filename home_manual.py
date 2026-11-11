@@ -22,10 +22,10 @@ import statistics
 from exo.calibration import Calibration
 from exo.compensation import run_identification
 from exo.joint import Joint, JointError
+from exo.logs import LOGGER
 from exo.loop import enter_pressed
 
-# ---- Motor ----
-CHANNEL = "can0"
+# ---- Motor ---- (the CAN interface is JointConfig.channel in exo/config.py)
 MOTOR_ID = 0x02
 FEEDBACK_ID = 0x12
 
@@ -56,7 +56,7 @@ def capture_by_hand(joint: Joint, prompt: str) -> float:
         if capture_end is None:  # waiting for Enter
             if enter_pressed():
                 capture_end = t + CAPTURE_S
-                print("Capturing, hold still...")
+                LOGGER.info("Capturing, hold still...")
             elif i % 20 == 0:
                 print(f"  moved {joint.angle_deg - start:+7.2f} deg | torque {joint.torque_nm:+.3f} Nm", end="\r")
         else:  # capturing
@@ -64,15 +64,15 @@ def capture_by_hand(joint: Joint, prompt: str) -> float:
                 positions.append(joint.motor.position)
             if t >= capture_end:
                 spread_deg = math.degrees(max(positions) - min(positions))
-                print(f"  captured at {joint.angle_deg:+.2f} deg (from start), spread {spread_deg:.3f} deg")
+                LOGGER.info(f"  captured at {joint.angle_deg:+.2f} deg (from start), spread {spread_deg:.3f} deg")
                 if spread_deg > 1.0:
-                    print("  WARNING: the link moved during the capture")
+                    LOGGER.warning("  the link moved during the capture")
                 return statistics.fmean(positions)
     raise AssertionError("unreachable")
 
 
 def main() -> None:
-    with Joint(CHANNEL, MOTOR_ID, FEEDBACK_ID, log_name="home_manual") as joint:
+    with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="home_manual") as joint:
         # Steps 1-3: the two stops, by hand
         print("Manual homing: the motor applies no torque. Ctrl-C aborts.")
         stop_1 = capture_by_hand(joint, "Move the link slowly to ONE hard stop, rest it gently there, press Enter.")
@@ -82,16 +82,16 @@ def main() -> None:
         cal = Calibration.from_stops(stop_1, stop_2, "manual", joint.motor.angle_offsets, joint.config)
         cal.save()
         joint.start_session(cal)
-        print(f"Step 4: stroke {cal.stroke_deg:.2f} deg, stops at +/-{cal.limit_deg:.2f} deg; homed")
+        LOGGER.info(f"Step 4: stroke {cal.stroke_deg:.2f} deg, stops at +/-{cal.limit_deg:.2f} deg; homed")
 
         # Step 5: friction and gravity
         if IDENTIFY:
-            print("\nStep 5: friction / gravity identification. The joint will move by itself from end to end.")
+            LOGGER.info("Step 5: friction / gravity identification. The joint will move by itself from end to end.")
             # Keep holding where it is while waiting (with the motor on, it must get a command every tick).
             joint.hold_until_enter(joint.angle_deg, "Let go of the link, then press Enter to start (Ctrl-C aborts).")
             comp = run_identification(joint, IDENTIFY_SPEEDS_DEG_S, IDENTIFY_MARGIN_DEG, IDENTIFY_ACCEL_DEG_S2)
             for line in comp.describe():
-                print(f"  {line}")
+                LOGGER.info(f"  {line}")
             cal.compensation = comp.as_dict()
             cal.save()
             joint.start_session(cal)  # use the compensation from now on
@@ -99,7 +99,7 @@ def main() -> None:
         # Step 6: to mid-stroke
         joint.move_to(0.0, phase="to 0")
         joint.hold_until_enter(0.0, "Homed. Holding 0 deg; press Enter to release.")
-        print("Released.")
+        LOGGER.info("Released.")
 
 
 if __name__ == "__main__":

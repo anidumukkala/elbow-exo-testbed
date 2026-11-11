@@ -11,6 +11,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class JointConfig:
+    # --- Wiring ---
+    # CAN interface the motor is plugged into (can0 = port CAN_0, can1 = port CAN_1 of the HAT).
+    # setup/can_up.sh (and so every new VS Code terminal) brings this interface up when run without
+    # arguments. Keep it a plain string literal: the script reads it from this file.
+    channel: str = "can0"
+
     # --- Mechanism ---
     # The link is bolted to the motor's output shaft (no transmission), so joint angle = motor angle.
     # +1: positive joint angle = positive motor direction. PLACEHOLDER: check which way is flexion.

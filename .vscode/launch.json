@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // F5 default: run/debug the open file in the pixi env, after the CAN check (tasks.json "can-up").
+            "name": "Python: current file (CAN up)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "python": "${workspaceFolder}/.pixi/envs/default/bin/python",
+            "cwd": "${workspaceFolder}",
+            // A real terminal: the scripts read Enter presses from stdin.
+            "console": "integratedTerminal",
+            "preLaunchTask": "can-up",
+            "justMyCode": true
+        }
+    ]
+}

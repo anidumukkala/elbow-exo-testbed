@@ -31,7 +31,6 @@ CAN FD: the interface must be in FD mode (``pixi run can-up``) and the motor con
 """
 
 import json
-import logging
 import math
 import subprocess
 import threading
@@ -42,7 +41,7 @@ import can
 from damiao_motor import KD_MAX, KP_MAX, MOTOR_TYPE_PRESETS, REGISTER_TABLE, DaMiaoController
 from damiao_motor.core.motor import DM_MOTOR_DISABLED, DM_MOTOR_ENABLED
 
-log = logging.getLogger("exo")
+from .logs import LOGGER
 
 BUSTYPE = "socketcan"  # python-can interface type (SocketCAN on the Raspberry Pi)
 MOTOR_TYPE = "4310"  # damiao-motor preset: PMAX 12.5 rad, VMAX 30 rad/s, TMAX 10 Nm
@@ -146,7 +145,7 @@ class DamiaoMotor:
     # Start / stop / update
     # ------------------------------------------------------------------------------------------
     def start(self) -> None:
-        log.info(f"Connecting to motor 0x{self.motor_id:02X} on {self.channel} (CAN FD)")
+        LOGGER.info(f"Connecting to motor 0x{self.motor_id:02X} on {self.channel} (CAN FD)")
         self._controller = DaMiaoController(channel=self.channel, bustype=BUSTYPE)
         try:
             self._use_can_fd()
@@ -167,8 +166,8 @@ class DamiaoMotor:
         except Exception:
             self._shutdown_bus()
             raise
-        log.info(f"Motor ready: position {self.position:+.4f} rad, status {self.status}, "
-                 f"MOS {self.mos_temperature:.0f} C, rotor {self.rotor_temperature:.0f} C")
+        LOGGER.info(f"Motor ready: position {self.position:+.4f} rad, status {self.status}, "
+                    f"MOS {self.mos_temperature:.0f} C, rotor {self.rotor_temperature:.0f} C")
 
     def stop(self) -> None:
         """Zero command, disable, close the bus. Safe to call more than once."""
@@ -179,11 +178,11 @@ class DamiaoMotor:
                     self._send()
                 self._motor.disable()
             except Exception as e:
-                log.warning(f"disabling the motor at stop failed: {e}")
+                LOGGER.warning(f"disabling the motor at stop failed: {e}")
             self._enabled = False
         self._shutdown_bus()
         self.mode = "idle"
-        log.info("Motor disabled")
+        LOGGER.info("Motor disabled")
 
     def update(self) -> None:
         """Send the staged command, wait for the reply, update the state and check it."""
@@ -349,7 +348,7 @@ class DamiaoMotor:
                     msg = controller.bus.recv(timeout=0.02)
                 except Exception as e:  # bus closed (shutdown) or failed
                     if controller._polling_active:
-                        log.error(f"CAN receive thread stopped: {e!r}")
+                        LOGGER.error(f"CAN receive thread stopped: {e!r}")
                     controller._polling_active = False
                     return
                 if msg is None or len(msg.data) != 8:
@@ -360,7 +359,7 @@ class DamiaoMotor:
                 try:
                     motor.process_feedback_frame(bytes(msg.data), arbitration_id=msg.arbitration_id)
                 except Exception as e:
-                    log.warning(f"CAN frame {bytes(msg.data).hex(' ')} not decoded: {e!r}")
+                    LOGGER.warning(f"CAN frame {bytes(msg.data).hex(' ')} not decoded: {e!r}")
 
         controller._polling_loop = receive_loop  # started by add_motor()
 
@@ -402,24 +401,24 @@ class DamiaoMotor:
             try:
                 self.registers[rid] = self._motor.get_register(rid, timeout=0.2)
             except TimeoutError:
-                log.warning(f"register {rid} ({REGISTER_TABLE[rid].variable}) not readable")
+                LOGGER.warning(f"register {rid} ({REGISTER_TABLE[rid].variable}) not readable")
         # Frames must be scaled with the firmware's mapping ranges.
         pmax, vmax, tmax = (float(self.registers[r]) for r in (REG_PMAX, REG_VMAX, REG_TMAX))
         if (pmax, vmax, tmax) != (self.pmax, self.vmax, self.tmax):
-            log.warning(f"firmware PMAX/VMAX/TMAX = {pmax}/{vmax}/{tmax}, expected "
-                        f"{self.pmax}/{self.vmax}/{self.tmax}; using the firmware values")
+            LOGGER.warning(f"firmware PMAX/VMAX/TMAX = {pmax}/{vmax}/{tmax}, expected "
+                           f"{self.pmax}/{self.vmax}/{self.tmax}; using the firmware values")
             self._motor.set_p_limits(-pmax, pmax)
             self._motor.set_v_limits(-vmax, vmax)
             self._motor.set_t_limits(-tmax, tmax)
             self.pmax, self.vmax, self.tmax = pmax, vmax, tmax
         if not math.isclose(float(self.registers[REG_GR]), EXPECTED_GEAR_RATIO, rel_tol=1e-3):
-            log.warning(f"gear ratio register Gr = {self.registers[REG_GR]}, expected {EXPECTED_GEAR_RATIO}")
-        log.debug(f"registers: { {REGISTER_TABLE[r].variable: v for r, v in self.registers.items()} }")
+            LOGGER.warning(f"gear ratio register Gr = {self.registers[REG_GR]}, expected {EXPECTED_GEAR_RATIO}")
+        LOGGER.debug(f"registers: { {REGISTER_TABLE[r].variable: v for r, v in self.registers.items()} }")
 
     def _ensure_mit_mode(self) -> None:
         if int(self.registers[REG_CTRL_MODE]) == 1:
             return
-        log.warning(f"control mode register = {self.registers[REG_CTRL_MODE]}, switching to MIT (1)")
+        LOGGER.warning(f"control mode register = {self.registers[REG_CTRL_MODE]}, switching to MIT (1)")
         self._motor.write_register(REG_CTRL_MODE, 1)
         time.sleep(0.05)
         mode = int(self.read_register(REG_CTRL_MODE))
@@ -446,7 +445,7 @@ class DamiaoMotor:
         turns = round((p_m - self._raw_position) / self._wrap_period)
         self.position = self._raw_position + turns * self._wrap_period
         if abs(self.position - p_m) > 0.05:
-            log.warning(f"feedback {self.position:+.4f} and p_m {p_m:+.4f} rad disagree (was the joint moving?)")
+            LOGGER.warning(f"feedback {self.position:+.4f} and p_m {p_m:+.4f} rad disagree (was the joint moving?)")
 
     @property
     def _wrap_period(self) -> float:
@@ -500,8 +499,8 @@ class DamiaoMotor:
         try:
             self._motor.disable()
         except Exception as e:
-            log.warning(f"disable after fault failed: {e}")
-        log.critical(f"MOTOR FAULT: {reason}. Motor disabled and latched off.")
+            LOGGER.warning(f"disable after fault failed: {e}")
+        LOGGER.critical(f"MOTOR FAULT: {reason}. Motor disabled and latched off.")
         raise MotorFault(reason)
 
     def _shutdown_bus(self) -> None:
@@ -509,6 +508,6 @@ class DamiaoMotor:
             try:
                 self._controller.shutdown()
             except Exception as e:
-                log.warning(f"CAN shutdown failed: {e}")
+                LOGGER.warning(f"CAN shutdown failed: {e}")
         self._controller = None
         self._motor = None

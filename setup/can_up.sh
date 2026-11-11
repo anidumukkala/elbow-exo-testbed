@@ -9,8 +9,12 @@
 # also overwrites settings someone else left behind. If the kernel rejects the FD settings, the
 # interface is brought up classic instead (never left down) and the script reports the failure.
 #
-#   bash setup/can_up.sh            # can0 and can1
-#   bash setup/can_up.sh can0       # only can0
+#   bash setup/can_up.sh            # the motor's interface: JointConfig.channel in exo/config.py
+#   bash setup/can_up.sh can0 can1  # these interfaces
+#
+# Without arguments the interface comes from exo/config.py, so moving the motor to the other port
+# only needs that one line changed (scripts and VS Code terminals follow it). If the file cannot
+# be read, can0 and can1 are both checked.
 #
 # Exit status: 0 if all present interfaces are OK, 1 otherwise.
 
@@ -18,8 +22,33 @@ BITRATE=1000000
 DBITRATE=5000000
 RESTART_MS=100
 
+CONFIG="$(cd "$(dirname "$0")/.." && pwd)/exo/config.py"
+
+# JointConfig.channel, read from the source (not imported: no packages needed, works before pixi).
+config_channel() {
+    python3 - "$CONFIG" <<'EOF' 2>/dev/null
+import ast, sys
+tree = ast.parse(open(sys.argv[1]).read())
+for node in ast.walk(tree):
+    if isinstance(node, ast.ClassDef) and node.name == "JointConfig":
+        for item in node.body:
+            if isinstance(item, ast.AnnAssign) and getattr(item.target, "id", None) == "channel":
+                print(ast.literal_eval(item.value))
+                sys.exit(0)
+sys.exit(1)
+EOF
+}
+
 ifaces=("$@")
-[ ${#ifaces[@]} -eq 0 ] && ifaces=(can0 can1)
+if [ ${#ifaces[@]} -eq 0 ]; then
+    channel=$(config_channel)
+    if [ -n "$channel" ]; then
+        ifaces=("$channel")
+    else
+        echo "[can_up] could not read JointConfig.channel from $CONFIG; checking can0 and can1"
+        ifaces=(can0 can1)
+    fi
+fi
 label="CAN FD, $BITRATE / $DBITRATE bit/s"
 
 # Prints what is wrong with an interface (nothing if it is fine). Exit 2 if it does not exist.

@@ -28,9 +28,9 @@ _frf.csv (responses per frequency), _summary.txt.
 
 from exo.chirp import Chirp, analyse, save_results, summarize
 from exo.joint import Joint, JointError
+from exo.logs import LOGGER
 
-# ---- Motor ----
-CHANNEL = "can0"
+# ---- Motor ---- (the CAN interface is JointConfig.channel in exo/config.py)
 MOTOR_ID = 0x02
 FEEDBACK_ID = 0x12
 
@@ -67,8 +67,9 @@ def main() -> None:
     rows = []  # one row per tick of the sweep, columns as exo.chirp.COLUMNS
     stem = None
     try:
-        with Joint(CHANNEL, MOTOR_ID, FEEDBACK_ID, log_name="free_chirp", rate_hz=RATE_HZ) as joint:
+        with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="free_chirp", rate_hz=RATE_HZ) as joint:
             stem = joint.log_stem
+            LOGGER.debug(f"settings: {settings}")  # in the .log file
 
             # Steps 1-2: to 0 deg and wait
             hold_nm = 0.0
@@ -76,7 +77,7 @@ def main() -> None:
                 joint.resume()
                 joint.move_to(0.0, phase="to 0")
                 hold_nm = joint.measure_holding_torque(torque_nm=joint.compensation_torque(0.0, 0.0))
-                print(f"Holding torque at 0 deg: {hold_nm:+.3f} Nm")
+                LOGGER.info(f"Holding torque at 0 deg: {hold_nm:+.3f} Nm")
                 joint.hold_until_enter(0.0, f"At 0 deg. Press Enter to start the sweep (~{DURATION_S:.0f} s; "
                                             "Ctrl-C aborts).")
 
@@ -120,13 +121,13 @@ def main() -> None:
                 if t >= DURATION_S + 0.5:  # a little longer, to settle at 0 deg
                     print()
                     break
-            joint.tick_log.flush()
+            LOGGER.flush_buffer()
 
             # Back to 0 deg
             if not DRY_RUN:
                 joint.move_to(0.0, phase="to 0")
                 joint.hold_until_enter(0.0, "Sweep done. Holding 0 deg; press Enter to release.")
-                print("Released.")
+                LOGGER.info("Released.")
     finally:
         # Step 4: results (also after an abort)
         if rows:
@@ -135,9 +136,9 @@ def main() -> None:
                 summary = f"Free chirp {stem.name}\n" + summarize(rows, frf, chirp, settings)
                 print("\n" + summary)
                 save_results(stem, rows, frf, summary)
-                print(f"Results: {stem}_chirp.csv, _frf.csv, _summary.txt")
+                LOGGER.info(f"Results: {stem}_chirp.csv, _frf.csv, _summary.txt")
             except Exception as e:  # never hide the run's own error behind a problem here
-                print(f"(no results: {e})")
+                LOGGER.error(f"no results: {e}")
 
 
 if __name__ == "__main__":

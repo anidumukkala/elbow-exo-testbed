@@ -26,9 +26,9 @@ Output: calibration/joint_cal.json and logs/home_auto_<time>.csv / .log.
 from exo.calibration import Calibration
 from exo.compensation import run_identification
 from exo.joint import Joint, JointError
+from exo.logs import LOGGER
 
-# ---- Motor ----
-CHANNEL = "can0"
+# ---- Motor ---- (the CAN interface is JointConfig.channel in exo/config.py)
 MOTOR_ID = 0x01
 FEEDBACK_ID = 0x11
 
@@ -72,31 +72,31 @@ def find_stop(joint: Joint, direction: int, push_nm: float) -> float:
         result = joint.push_until_moves(direction, start_nm=direction * push_nm, max_nm=STOP_TORQUE_NM,
                                         rate_nm_s=TORQUE_RAMP_NM_S, phase="stall check")
         if not result.moved:
-            print(f"  stop at {result.angle_deg:+.2f} deg (from start), pushing {STOP_TORQUE_NM:g} Nm")
+            LOGGER.info(f"  stop at {result.angle_deg:+.2f} deg (from start), pushing {STOP_TORQUE_NM:g} Nm")
             joint.move_by(-direction * RELAX_DEG, phase="relax")
             return result.motor_rad
         # A stiff spot: it needed more push than we gave, so push harder from now on. 1.5 x the
         # torque that moved it keeps the approach at a useful speed (about 1/3 of APPROACH_SPEED_DEG_S).
         push_nm = max(push_nm, 1.5 * abs(result.torque_nm), abs(result.torque_nm) + APPROACH_MARGIN_NM)
         push_nm = min(push_nm, STOP_TORQUE_NM - APPROACH_MARGIN_NM)
-        print(f"  stiff spot at {result.angle_deg:+.1f} deg (moved at {result.torque_nm:+.2f} Nm); "
-              f"continuing with {push_nm:.2f} Nm")
+        LOGGER.info(f"  stiff spot at {result.angle_deg:+.1f} deg (moved at {result.torque_nm:+.2f} Nm); "
+                    f"continuing with {push_nm:.2f} Nm")
     raise JointError(f"{MAX_FALSE_STALLS} stalls that were not the stop (friction too high?)")
 
 
 def main() -> None:
-    with Joint(CHANNEL, MOTOR_ID, FEEDBACK_ID, log_name="home_auto") as joint:
+    with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="home_auto") as joint:
         print("Automatic homing: the joint will move by itself. Keep hands clear; nobody wearing the exo.")
         input("Press Enter to start (Ctrl-C to cancel)... ")
 
         # Step 1: breakaway test at the starting position
-        print("Step 1: breakaway test")
+        LOGGER.info("Step 1: breakaway test")
         up = breakaway(joint, +1)
         if up is not None:
             joint.move_by(+CLEARANCE_DEG, phase="clear")  # off the - stop, in case it rested there
             down = breakaway(joint, -1)
         else:  # resting on the + stop: test downward first
-            print("  resting on the + stop; testing downward first")
+            LOGGER.info("  resting on the + stop; testing downward first")
             down = breakaway(joint, -1)
             if down is not None:
                 joint.move_by(-CLEARANCE_DEG, phase="clear")
@@ -105,16 +105,16 @@ def main() -> None:
             raise JointError(f"the joint did not move with {STOP_TORQUE_NM:g} Nm in either direction: jammed?")
         static_friction = (up - down) / 2
         gravity_here = (up + down) / 2
-        print(f"  moves up at {up:+.3f} Nm, down at {down:+.3f} Nm: "
-              f"static friction {static_friction:.3f} Nm, gravity here {gravity_here:+.3f} Nm")
+        LOGGER.info(f"  moves up at {up:+.3f} Nm, down at {down:+.3f} Nm: "
+                    f"static friction {static_friction:.3f} Nm, gravity here {gravity_here:+.3f} Nm")
         push_nm = max(abs(up), abs(down)) + APPROACH_MARGIN_NM
         push_nm = min(max(push_nm, MIN_APPROACH_NM), STOP_TORQUE_NM - APPROACH_MARGIN_NM)
-        print(f"  approach push {push_nm:.2f} Nm")
+        LOGGER.info(f"  approach push {push_nm:.2f} Nm")
 
         # Steps 2 and 3: the two stops
-        print(f"Step 2: first stop ({'+' if FIRST_DIRECTION > 0 else '-'} direction)")
+        LOGGER.info(f"Step 2: first stop ({'+' if FIRST_DIRECTION > 0 else '-'} direction)")
         stop_1 = find_stop(joint, FIRST_DIRECTION, push_nm)
-        print(f"Step 3: second stop ({'+' if FIRST_DIRECTION < 0 else '-'} direction)")
+        LOGGER.info(f"Step 3: second stop ({'+' if FIRST_DIRECTION < 0 else '-'} direction)")
         stop_2 = find_stop(joint, -FIRST_DIRECTION, push_nm)
 
         # Step 4: angle 0 = mid-stroke
@@ -123,13 +123,13 @@ def main() -> None:
                          "gravity_at_start_nm": gravity_here}
         cal.save()
         joint.start_session(cal)
-        print(f"Step 4: stroke {cal.stroke_deg:.2f} deg, stops at +/-{cal.limit_deg:.2f} deg; homed")
+        LOGGER.info(f"Step 4: stroke {cal.stroke_deg:.2f} deg, stops at +/-{cal.limit_deg:.2f} deg; homed")
 
         # Step 5: friction and gravity
-        print("Step 5: friction / gravity identification")
+        LOGGER.info("Step 5: friction / gravity identification")
         comp = run_identification(joint, IDENTIFY_SPEEDS_DEG_S, IDENTIFY_MARGIN_DEG, IDENTIFY_ACCEL_DEG_S2)
         for line in comp.describe():
-            print(f"  {line}")
+            LOGGER.info(f"  {line}")
         cal.compensation = comp.as_dict()
         cal.save()
         joint.start_session(cal)  # use the compensation from now on
@@ -137,7 +137,7 @@ def main() -> None:
         # Step 6: to mid-stroke
         joint.move_to(0.0, phase="to 0")
         joint.hold_until_enter(0.0, "Homed. Holding 0 deg; press Enter to release.")
-        print("Released.")
+        LOGGER.info("Released.")
 
 
 if __name__ == "__main__":

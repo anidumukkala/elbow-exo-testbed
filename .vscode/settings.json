@@ -1,0 +1,35 @@
+{
+    // Use the pixi "default" environment as the workspace Python interpreter
+    // (Run/Debug, IntelliSense/Pylance, testing).
+    "python.defaultInterpreterPath": "${workspaceFolder}/.pixi/envs/default/bin/python",
+
+    // Activate the selected interpreter's environment in new terminals.
+    "python.terminal.activateEnvironment": true,
+
+    // Linux (the Raspberry Pi): open new integrated terminals as a normal interactive bash (loads
+    // ~/.bashrc for colors/prompt) with the pixi env activated on top, so `python`, `pip`, and pixi
+    // tasks all resolve to the project environment. Last, setup/can_up.sh brings the motor's CAN
+    // interface (JointConfig.channel in exo/config.py) up in CAN FD mode (sudo prompt only if needed).
+    // Other platforms (no CAN): the pixi extension below activates the env in the default shell.
+    "terminal.integrated.profiles.linux": {
+        "pixi": {
+            "path": "bash",
+            "args": [
+                "-c",
+                "exec bash --rcfile <(echo '[ -f ~/.bashrc ] && . ~/.bashrc; eval \"$(pixi shell-hook --manifest-path \"${workspaceFolder}/pixi.toml\")\"; bash \"${workspaceFolder}/setup/can_up.sh\"')"
+            ],
+            "icon": "terminal-bash"
+        }
+    },
+    "terminal.integrated.defaultProfile.linux": "pixi",
+
+    // Keep the pixi env out of file search/watching (it's large).
+    "files.watcherExclude": {
+        "**/.pixi/**": true
+    },
+    "search.exclude": {
+        "**/.pixi": true
+    },
+    "python-envs.defaultEnvManager": "renan-r-santos.pixi-code:pixi",
+    "python-envs.defaultPackageManager": "renan-r-santos.pixi-code:pixi"
+}
