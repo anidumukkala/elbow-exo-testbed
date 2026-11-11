@@ -15,7 +15,7 @@ class JointConfig:
     # The link is bolted to the motor's output shaft (no transmission), so joint angle = motor angle.
     # +1: positive joint angle = positive motor direction. PLACEHOLDER: check which way is flexion.
     output_sign: int = +1
-    design_stroke_deg: float = 180.0  # PLACEHOLDER: rough travel between the hard stops
+    design_stroke_deg: float = 150.0  # PLACEHOLDER: rough travel between the hard stops
     stroke_tol_deg: float = 45.0  # homing refuses a stroke further off the design value than this
 
     # --- Control loop ---

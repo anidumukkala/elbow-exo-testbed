@@ -31,8 +31,8 @@ from exo.joint import Joint, JointError
 
 # ---- Motor ----
 CHANNEL = "can0"
-MOTOR_ID = 0x05
-FEEDBACK_ID = 0x15
+MOTOR_ID = 0x02
+FEEDBACK_ID = 0x12
 
 # ---- Sweep settings ----
 # Conservative first-run values. The link's inertia J is not known yet: once a sweep has measured

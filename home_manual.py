@@ -26,8 +26,8 @@ from exo.loop import enter_pressed
 
 # ---- Motor ----
 CHANNEL = "can0"
-MOTOR_ID = 0x05
-FEEDBACK_ID = 0x15
+MOTOR_ID = 0x02
+FEEDBACK_ID = 0x12
 
 # ---- Homing settings ----
 CAPTURE_S = 0.5  # the stop position is averaged over this long after Enter

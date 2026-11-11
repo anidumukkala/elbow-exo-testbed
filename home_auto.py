@@ -29,8 +29,8 @@ from exo.joint import Joint, JointError
 
 # ---- Motor ----
 CHANNEL = "can0"
-MOTOR_ID = 0x05
-FEEDBACK_ID = 0x15
+MOTOR_ID = 0x01
+FEEDBACK_ID = 0x11
 
 # ---- Homing settings ----
 FIRST_DIRECTION = +1  # which stop first: +1 = positive joint angle
