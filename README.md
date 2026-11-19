@@ -16,22 +16,7 @@ To compare the **UME-Exo elbow assembly (40:1 actuator, heavier brace)** against
 
 ---
 
-## 2. Package Structure
-
-New files added for Experiment 2 are marked with **[NEW]**:
-
-| File | Role |
-| :--- | :--- |
-| `exo/passive.py` **[NEW]** | Core data schema (`PASSIVE_COLUMNS`), Experiment 1 baseline loader, pure-NumPy zero-phase Savitzky-Golay smoothing/differentiation, gravity calibration, transparency metrics, free-decay least-squares ID, optional loadcell cross-validation, and report formatting. Uses only Python stdlib + NumPy (no new Raspberry Pi dependencies). |
-| `passive_exo.py` **[NEW]** | Real-time Experiment 2 test runner and 500 Hz data collector with zero-torque mode, guided 3-phase protocol, live terminal telemetry, dry-run mode, and human-in-the-loop safety guards. |
-| `analyze_passive_exo.py` **[NEW]** | Standalone offline analysis CLI that loads `_passive.csv`, `calibration/joint_cal.json`, Experiment 1 `_frf.csv` (and optional loadcell CSV), prints/saves the full report, and generates 4 diagnostic PNG plots (when `matplotlib` is installed). |
-| `tests/test_passive_pipeline.py` **[NEW]** | End-to-end synthetic 500 Hz simulation & verification suite (no hardware required). |
-| `pixi.toml` *(updated)* | Adds `passive-exo`, `passive-exo-dry`, `analyze-passive`, and `test-passive` tasks. |
-| `exo/{config,motor,joint,loop,logs,calibration,compensation,chirp}.py`, `home_auto.py`, `home_manual.py`, `free_chirp.py`, `setup/can_up.sh` | Original testbed codebase preserved intact. |
-
----
-
-## 3. Prerequisites & Safety Checklist
+## 2. Prerequisites & Safety Checklist
 
 Before strapping a human arm into the exoskeleton:
 
@@ -63,7 +48,7 @@ Before strapping a human arm into the exoskeleton:
 
 ---
 
-## 4. General Test Procedure
+## 3. General Test Procedure
 
 ### Step 1 — Run the Test Script
 ```bash
@@ -94,7 +79,7 @@ Strap the subject's forearm securely into the cuff so the anatomical elbow axis 
 
 ---
 
-## 5. Data Collection & Offline Analysis
+## 4. Data Collection & Offline Analysis
 
 ### Recorded Files (in `logs/`)
 Each run writes:
@@ -127,7 +112,7 @@ This simulates a noisy 500 Hz session with known ground-truth parameters and ver
 
 ---
 
-## 6. How to Interpret the Results
+## 5. How to Interpret the Results
 
 ### A. Mechanical Transparency Metrics (Phase B — Active Swings)
 | Metric | Physical Meaning | What Good (QDD 10:1) Looks Like vs. High-Ratio (UME 40:1) |
