@@ -15,7 +15,7 @@ logs/<log_name>_<date>_<time>.log / .csv.
 
 Differences from OSL, on purpose:
   - Messages go to stdout (OSL: stderr), the stream print() uses, so prompts and messages stay in order.
-  - The buffer holds 20000 rows by default (~100 s at 200 Hz; OSL: 1000) and Joint flushes it between
+  - The buffer holds 100000 rows by default (~500 s at 200 Hz; OSL: 1000) and Joint flushes it between
     moves: writing to the SD card inside the control loop can stall it for several milliseconds.
   - Floats are written with 6 significant digits and nan as an empty cell (OSL: str(value)).
   - A tracked function that raises writes ERROR in its cell and warns once; it stays tracked (OSL
@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent  # repository root
 LOG_DIR = ROOT / "logs"
 
 LOG_FORMAT = "[%(asctime)s] %(levelname)s: %(message)s"  # OSL's default
-BUFFER_SIZE = 20000
+BUFFER_SIZE = 100000
 
 __all__ = ["LOGGER", "LOG_DIR", "LogLevel", "Logger", "ROOT", "write_csv"]
 
