@@ -6,13 +6,19 @@ Dynamics model (joint side, angle q in rad with 0 = mid-stroke, velocity qd in r
     Exo baseline (identified in Experiment 1: homing + free_chirp):
         tau_exo(q, qd, qdd) = J_exo * qdd + tau_c_exo * tanh(qd / v_band) + b_exo * qd + g_exo(q)
 
-    Interaction torque estimated from exo dynamics (in zero-torque mode, tau_m ~ 0):
+    Interaction torque estimated from exo dynamics (Phase B, zero-torque mode, tau_m ~ 0):
         tau_h_hat = tau_exo(q, qd, qdd) - tau_m
 
-    Coupled relaxed human forearm + cuff + exo during passive free-decay swings (tau_muscle = 0):
+    Coupled relaxed human forearm + cuff + exo system ID (Phase C):
+      Mode 1 (default, recommended for hard-stop-limited rigs): Gentle motor-driven relaxed chirp
+        tau_m = J_total * qdd + tau_c_total * tanh(qd / v_band) + b_total * qd + k_eff * q + tau_0
+        Stays centered at 0 deg (+/-8 deg), works at any rig orientation and friction level, never
+        hits mechanical hard stops, and directly measures torque scale from motor current tau_m.
+
+      Mode 2 (legacy, requires hanging equilibrium well inside mechanical stops): Free-decay swings
         J_total * qdd + tau_c_total * tanh(qd / v_band) + b_total * qd = tau_m - g_total(q)
 
-    where:
+    In both modes:
         J_human      = J_total     - J_exo          (human forearm + hand inertia about elbow)
         tau_c_cuff   = tau_c_total - tau_c_exo      (skin-cuff interface + passive elbow dry friction)
         b_cuff       = b_total     - b_exo          (skin-cuff interface + passive elbow viscous damping)
@@ -41,7 +47,7 @@ PASSIVE_COLUMNS = [
     "t",               # loop elapsed time [s]
     "t_sample",        # motor feedback timestamp [s, same monotonic clock]
     "fresh",           # 1 if a new CAN reply arrived on this tick
-    "phase",           # test phase: gravity_hold_1, active_swing, free_decay_1, ...
+    "phase",           # test phase: gravity_hold_1_pos, active_swing, relaxed_chirp, free_decay_1, ...
     "trial",           # integer trial index within phase (0 if not applicable)
     "angle_deg",       # joint angle [deg], 0 = mid-stroke
     "velocity_deg_s",  # joint angular velocity [deg/s]
@@ -89,7 +95,9 @@ class GravityFit:
     n_angles: int
     hold_angles_deg: list[float] = field(default_factory=list)
     hold_torques_nm: list[float] = field(default_factory=list)
-    source: str = "measured"  # "measured", "anthropometric", or "none"
+    source: str = "measured"  # "measured", "measured_bidirectional", "anthropometric", or "none"
+    bidirectional: bool = False
+    stiction_halfwidth_nm: float = math.nan
 
     def torque(self, q_rad: np.ndarray) -> np.ndarray:
         return self.gravity_cos_nm * np.cos(q_rad) + self.gravity_sin_nm * np.sin(q_rad)
@@ -120,7 +128,7 @@ class TransparencyMetrics:
 
 @dataclass
 class DecayTrialFit:
-    """System-ID fit for a single relaxed free-decay swing trial."""
+    """System-ID fit for a single relaxed Phase C trial (free-decay or chirp)."""
     trial: int
     duration_s: float
     n_samples: int
@@ -153,6 +161,9 @@ class PassiveIdResult:
     cond_number: float
     n_trials: int
     n_samples: int
+    method: str = "free_decay"  # "relaxed_chirp" or "free_decay"
+    k_eff_nm_rad: float = math.nan
+    tau_offset_nm: float = math.nan
     per_trial: list[DecayTrialFit] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -245,7 +256,6 @@ def fit_inertia_from_frf_csv(frf_csv: Path, min_hz: float = 2.0) -> float:
                 freqs.append(fz)
                 inertias.append(jj)
     if len(freqs) < 3:
-        # Fall back to median across all finite rows if fewer than 3 high-frequency points
         all_j = []
         with open(frf_csv, "r", newline="") as f:
             for row in csv.DictReader(f):
@@ -280,12 +290,9 @@ def savgol_coeffs(window_length: int, polyorder: int, deriv: int = 0, delta: flo
 
     half = window_length // 2
     x = np.arange(-half, half + 1, dtype=float)
-    # Vandermonde matrix A[i, k] = x[i]^k
     A = np.vander(x, N=polyorder + 1, increasing=True)
-    # Pseudoinverse row `deriv` gives the derivative coefficients at x = 0
     pinv = np.linalg.pinv(A)
     coeffs = pinv[deriv] * math.factorial(deriv) / (delta ** deriv)
-    # Reverse for np.convolve correlation convention
     return coeffs[::-1]
 
 
@@ -296,20 +303,11 @@ def smooth_kinematics(
     window_s: float = 0.06,
     polyorder: int = 3,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Resample onto a uniform time grid and compute zero-phase smoothed q, qd, qdd [rad, rad/s, rad/s^2].
-
-    Returns:
-        t_u: uniform time vector [s] (trimmed by half-window at each end)
-        q_rad: smoothed angle [rad]
-        qd_rad_s: smoothed angular velocity [rad/s]
-        qdd_rad_s2: smoothed angular acceleration [rad/s^2]
-        valid_mask_u: slice indices or interpolated weights (here returns full trimmed arrays)
-    """
+    """Resample onto a uniform time grid and compute zero-phase smoothed q, qd, qdd [rad, rad/s, rad/s^2]."""
     t = np.asarray(t_s, dtype=float)
     q_raw = np.radians(np.asarray(angle_deg, dtype=float))
     order = np.argsort(t)
     t, q_raw = t[order], q_raw[order]
-    # Remove duplicate timestamps
     keep = np.concatenate(([True], np.diff(t) > 1e-7))
     t, q_raw = t[keep], q_raw[keep]
 
@@ -339,7 +337,6 @@ def smooth_kinematics(
     half = win // 2
     t_trim = t_u[half:len(t_u) - half]
 
-    # Also return motor-reported velocity interpolated to t_trim if provided (for diagnostics)
     if velocity_deg_s is not None:
         v_raw = np.radians(np.asarray(velocity_deg_s, dtype=float))[order][keep]
         v_u = np.interp(t_u, t, v_raw)
@@ -395,7 +392,7 @@ def load_passive_csv(path: Path) -> list[dict]:
 
 
 # ----------------------------------------------------------------------------------------------
-# Phase A: Static Gravity Calibration (Relaxed Forearm + Exo)
+# Phase A: Static Gravity Calibration (Relaxed Forearm + Exo, Bidirectional Stiction Cancellation)
 # ----------------------------------------------------------------------------------------------
 def fit_gravity_from_holds(
     records: list[dict],
@@ -403,7 +400,11 @@ def fit_gravity_from_holds(
     settle_fraction: float = 0.5,
 ) -> tuple[Optional[GravityFit], Optional[GravityFit]]:
     """Fit total gravity g_total(q) = gc*cos(q) + gs*sin(q) from Phase A static holds,
-    and subtract g_exo(q) to obtain human forearm gravity g_arm(q)."""
+    and subtract g_exo(q) to obtain human forearm gravity g_arm(q).
+
+    When bidirectional approach pairs (`gravity_hold_<i>_pos` and `gravity_hold_<i>_neg`) are
+    present, averages the + and - approach torques at each angle to cancel Coulomb stiction bias.
+    """
     holds_by_phase: dict[str, list[dict]] = {}
     for r in records:
         if r["fresh"] == 1 and r["phase"].startswith("gravity_hold"):
@@ -412,8 +413,8 @@ def fit_gravity_from_holds(
     if not holds_by_phase:
         return None, None
 
-    hold_angles, hold_torques = [], []
-    all_q, all_tau = [], []
+    # Compute settled (mean_angle_deg, mean_torque_nm) per recorded hold phase
+    phase_stats: dict[str, tuple[float, float]] = {}
     for phase_name in sorted(holds_by_phase):
         seg = holds_by_phase[phase_name]
         if len(seg) < 10:
@@ -422,22 +423,55 @@ def fit_gravity_from_holds(
         settled = seg[start_idx:]
         q_deg = np.array([r["angle_deg"] for r in settled], dtype=float)
         tau = np.array([r["torque_nm"] for r in settled], dtype=float)
-        hold_angles.append(float(np.mean(q_deg)))
-        hold_torques.append(float(np.mean(tau)))
-        all_q.append(np.radians(q_deg))
-        all_tau.append(tau)
+        phase_stats[phase_name] = (float(np.mean(q_deg)), float(np.mean(tau)))
+
+    # Group bidirectional _pos / _neg pairs by base name (e.g. "gravity_hold_1")
+    grouped: dict[str, dict[str, tuple[float, float]]] = {}
+    for pname, stats in phase_stats.items():
+        if pname.endswith("_pos"):
+            grouped.setdefault(pname[:-4], {})["pos"] = stats
+        elif pname.endswith("_neg"):
+            grouped.setdefault(pname[:-4], {})["neg"] = stats
+        else:
+            grouped.setdefault(pname, {})["single"] = stats
+
+    hold_angles: list[float] = []
+    hold_torques: list[float] = []
+    stiction_halves: list[float] = []
+
+    for base_name in sorted(grouped):
+        entry = grouped[base_name]
+        if "pos" in entry and "neg" in entry:
+            q_p, t_p = entry["pos"]
+            q_n, t_n = entry["neg"]
+            hold_angles.append(0.5 * (q_p + q_n))
+            hold_torques.append(0.5 * (t_p + t_n))
+            stiction_halves.append(0.5 * abs(t_p - t_n))
+        elif "single" in entry:
+            q_s, t_s = entry["single"]
+            hold_angles.append(q_s)
+            hold_torques.append(t_s)
+        else:
+            # Only one direction recorded for this angle
+            only = next(iter(entry.values()))
+            hold_angles.append(only[0])
+            hold_torques.append(only[1])
 
     if len(hold_angles) < 2:
         return None, None
 
-    q_rad = np.concatenate(all_q)
-    tau_arr = np.concatenate(all_tau)
+    q_rad = np.radians(np.asarray(hold_angles, dtype=float))
+    tau_arr = np.asarray(hold_torques, dtype=float)
     X = np.column_stack([np.cos(q_rad), np.sin(q_rad)])
     coef, *_ = np.linalg.lstsq(X, tau_arr, rcond=None)
     gc_tot, gs_tot = float(coef[0]), float(coef[1])
     rms = float(np.sqrt(np.mean((tau_arr - X @ coef) ** 2)))
     mgl_tot = math.hypot(gc_tot, gs_tot)
     th_tot = math.degrees(math.atan2(gs_tot, gc_tot))
+
+    bidir = len(stiction_halves) >= 2
+    stiction_hw = float(np.mean(stiction_halves)) if stiction_halves else math.nan
+    src = "measured_bidirectional" if bidir else "measured"
 
     g_total = GravityFit(
         gravity_cos_nm=gc_tot,
@@ -448,7 +482,9 @@ def fit_gravity_from_holds(
         n_angles=len(hold_angles),
         hold_angles_deg=hold_angles,
         hold_torques_nm=hold_torques,
-        source="measured",
+        source=src,
+        bidirectional=bidir,
+        stiction_halfwidth_nm=stiction_hw,
     )
 
     gc_arm = gc_tot - exo_baseline.gravity_cos_nm
@@ -467,7 +503,9 @@ def fit_gravity_from_holds(
             t - float(exo_baseline.gravity(np.array([math.radians(a)]))[0])
             for a, t in zip(hold_angles, hold_torques)
         ],
-        source="measured",
+        source=src,
+        bidirectional=bidir,
+        stiction_halfwidth_nm=stiction_hw,
     )
     return g_total, g_arm
 
@@ -531,13 +569,11 @@ def analyze_active_swing(
     tau_gravity = exo_baseline.gravity(q)
     tau_h_hat = tau_inertia + tau_friction + tau_gravity - tau_m
 
-    # Mechanical work done by human against exo resistance (positive = human pushing against exo)
     power_w = tau_h_hat * qd
     dt_u = float(np.median(np.diff(t_u)))
     total_work_j = float(np.sum(np.abs(power_w)) * dt_u)
     duration = float(t_u[-1] - t_u[0])
 
-    # Speed-binned breakdown (slow < 60, medium 60-150, fast >= 150 deg/s)
     abs_speed_deg_s = np.abs(np.degrees(qd))
     bins = [
         ("slow (<60 deg/s)", abs_speed_deg_s < 60.0),
@@ -592,7 +628,218 @@ def analyze_active_swing(
 
 
 # ----------------------------------------------------------------------------------------------
-# Phase C: Relaxed Free-Decay Swings (Human Forearm Inertia + Skin-Cuff Friction ID)
+# Phase C (Default): Relaxed Motor-Driven Chirp System ID (Hard-Stop & Orientation Independent)
+# ----------------------------------------------------------------------------------------------
+def _build_passive_warnings(
+    r2: float,
+    j_human: float,
+    tc_cuff: float,
+    b_cuff: float,
+    cond: float,
+    method: str,
+) -> list[str]:
+    warnings: list[str] = []
+    if r2 < 0.85:
+        if method == "relaxed_chirp":
+            warnings.append(
+                f"Low pooled R^2 ({r2:.3f}): subject may have tensed/guarded during the relaxed chirp "
+                "or cuff strap slipped on the forearm."
+            )
+        else:
+            warnings.append(
+                f"Low pooled R^2 ({r2:.3f}): subject may not have been fully relaxed during free decay, "
+                "gravity calibration has an offset, or the arm contacted a hard stop."
+            )
+    if j_human <= 0:
+        warnings.append(
+            f"Estimated human inertia is non-positive ({j_human * 1e3:+.2f} e-3 kg m^2): "
+            "check exo baseline J_exo and subject relaxation."
+        )
+    elif not (0.015 <= j_human <= 0.12):
+        warnings.append(
+            f"Estimated human forearm inertia ({j_human * 1e3:.2f} e-3 kg m^2) is outside the typical "
+            "adult forearm+hand range (30-80 e-3 kg m^2); verify relaxation and cuff alignment."
+        )
+    if tc_cuff < -0.02 or b_cuff < -0.01:
+        warnings.append(
+            f"Negative interface friction component (coulomb {tc_cuff:+.4f} Nm, viscous {b_cuff:+.4f} Nm s/rad): "
+            "possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor)."
+        )
+    if cond > 250.0:
+        warnings.append(
+            f"High regression condition number ({cond:.1f}): check excitation amplitude and frequency range."
+        )
+    return warnings
+
+
+def analyze_relaxed_chirp(
+    records: list[dict],
+    exo_baseline: ExoBaseline,
+    window_s: float = 0.04,
+    v_band_deg_s: float = DEFAULT_V_BAND_DEG_S,
+    min_speed_deg_s: float = 2.0,
+    trim_edge_s: float = 1.0,
+    stop_limit_deg: Optional[float] = None,
+    stop_margin_deg: float = 5.0,
+) -> tuple[Optional[PassiveIdResult], Optional[dict]]:
+    """Identify total inertia, Coulomb/viscous friction, and effective stiffness from a gentle
+    motor-driven sinusoidal chirp with the relaxed human arm strapped in.
+
+    Regression model:
+        tau_m(t) = J_total * qdd + tau_c_total * tanh(qd / v_band) + b_total * qd + k_eff * q + tau_0
+
+    Because frequency sweeps across a wide band (e.g. 0.5 -> 6 Hz), qdd = -w^2 * q is cleanly
+    separated from k_eff * q (gravity gradient + passive elbow stiffness), and tau_0 absorbs any
+    static gravity offset at the sweep center. Works regardless of rig orientation or hard stops.
+    """
+    trials: dict[int, list[dict]] = {}
+    for r in records:
+        if r["fresh"] == 1 and r["phase"].startswith("relaxed_chirp"):
+            trials.setdefault(r["trial"], []).append(r)
+
+    if not trials:
+        return None, None
+
+    chirp_win = min(window_s, 0.04)  # preserve up to ~6-8 Hz without Savitzky-Golay attenuation
+    v_band = math.radians(max(v_band_deg_s, 1e-3))
+    min_v = math.radians(min_speed_deg_s)
+
+    per_trial: list[DecayTrialFit] = []
+    X_all, y_all = [], []
+    plot_trials = []
+
+    for tr_id in sorted(trials):
+        seg = trials[tr_id]
+        if len(seg) < 100:
+            continue
+        t = np.array([r["t_sample"] for r in seg], dtype=float)
+        ang = np.array([r["angle_deg"] for r in seg], dtype=float)
+        vel = np.array([r["velocity_deg_s"] for r in seg], dtype=float)
+        tau_m_raw = np.array([r["torque_nm"] for r in seg], dtype=float)
+
+        t_u, q, qd, qdd, _ = smooth_kinematics(t, ang, vel, window_s=chirp_win)
+        tau_m = np.interp(t_u, t, tau_m_raw)
+
+        # Trim fade-in / fade-out tails where excitation is tiny
+        t_rel = t_u - t_u[0]
+        dur = float(t_rel[-1])
+        if dur > 2.5 * trim_edge_s:
+            active = (t_rel >= trim_edge_s) & (t_rel <= dur - trim_edge_s)
+        else:
+            active = np.ones_like(q, dtype=bool)
+
+        # Keep samples with meaningful motion and well clear of hard stops
+        active &= (np.abs(qd) >= min_v) | (np.abs(qdd) >= math.radians(20.0))
+        if stop_limit_deg is not None and math.isfinite(stop_limit_deg):
+            active &= np.abs(np.degrees(q)) < (stop_limit_deg - stop_margin_deg)
+
+        if int(np.sum(active)) < 50:
+            continue
+
+        q_c = q - float(np.mean(q[active]))
+        X = np.column_stack([
+            qdd[active],
+            np.tanh(qd[active] / v_band),
+            qd[active],
+            q_c[active],
+            np.ones(int(np.sum(active)), dtype=float),
+        ])
+        y = tau_m[active]
+
+        coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+        y_hat = X @ coef
+        resid = y - y_hat
+        ss_res = float(np.sum(resid ** 2))
+        ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+        r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-12 else math.nan
+        rms = float(np.sqrt(np.mean(resid ** 2)))
+        cond = float(np.linalg.cond(X))
+
+        j_tot, tc_tot, b_tot, k_eff, tau_0 = [float(c) for c in coef]
+        per_trial.append(DecayTrialFit(
+            trial=tr_id,
+            duration_s=dur,
+            n_samples=int(X.shape[0]),
+            angle_span_deg=float(np.max(np.degrees(q)) - np.min(np.degrees(q))),
+            peak_speed_deg_s=float(np.max(np.abs(np.degrees(qd)))),
+            j_total_kg_m2=j_tot,
+            coulomb_total_nm=tc_tot,
+            viscous_total_nm_s_rad=b_tot,
+            r2=r2,
+            rms_residual_nm=rms,
+            cond_number=cond,
+        ))
+        X_all.append(X)
+        y_all.append(y)
+
+        y_fit_full = (
+            j_tot * qdd
+            + tc_tot * np.tanh(qd / v_band)
+            + b_tot * qd
+            + k_eff * q_c
+            + tau_0
+        )
+        plot_trials.append({
+            "trial": tr_id,
+            "t": t_rel,
+            "q_deg": np.degrees(q),
+            "qd_deg_s": np.degrees(qd),
+            "active": active,
+            "y_meas": tau_m,
+            "y_fit_trial": y_fit_full,
+        })
+
+    if not X_all:
+        return None, None
+
+    Xp = np.vstack(X_all)
+    yp = np.concatenate(y_all)
+    coef, *_ = np.linalg.lstsq(Xp, yp, rcond=None)
+    resid = yp - Xp @ coef
+    dof = max(1, Xp.shape[0] - Xp.shape[1])
+    s2 = float(np.sum(resid ** 2)) / dof
+    cov = s2 * np.linalg.pinv(Xp.T @ Xp)
+    se = np.sqrt(np.maximum(0.0, np.diag(cov)))
+
+    ss_res = float(np.sum(resid ** 2))
+    ss_tot = float(np.sum((yp - np.mean(yp)) ** 2))
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-12 else math.nan
+    rms = float(np.sqrt(np.mean(resid ** 2)))
+    cond = float(np.linalg.cond(Xp))
+
+    j_tot, tc_tot, b_tot, k_eff, tau_0 = [float(c) for c in coef]
+    j_human = j_tot - exo_baseline.inertia_kg_m2
+    tc_cuff = tc_tot - exo_baseline.coulomb_nm
+    b_cuff = b_tot - exo_baseline.viscous_nm_s_rad
+
+    warnings = _build_passive_warnings(r2, j_human, tc_cuff, b_cuff, cond, method="relaxed_chirp")
+
+    result = PassiveIdResult(
+        j_total_kg_m2=j_tot,
+        j_total_se_kg_m2=float(se[0]),
+        coulomb_total_nm=tc_tot,
+        coulomb_total_se_nm=float(se[1]),
+        viscous_total_nm_s_rad=b_tot,
+        viscous_total_se_nm_s_rad=float(se[2]),
+        j_human_kg_m2=j_human,
+        coulomb_cuff_nm=tc_cuff,
+        viscous_cuff_nm_s_rad=b_cuff,
+        r2=r2,
+        rms_residual_nm=rms,
+        cond_number=cond,
+        n_trials=len(per_trial),
+        n_samples=int(Xp.shape[0]),
+        method="relaxed_chirp",
+        k_eff_nm_rad=k_eff,
+        tau_offset_nm=tau_0,
+        per_trial=per_trial,
+        warnings=warnings,
+    )
+    return result, {"method": "relaxed_chirp", "trials": plot_trials, "pooled_coef": coef}
+
+
+# ----------------------------------------------------------------------------------------------
+# Phase C (Legacy): Relaxed Free-Decay Swings (with Hard-Stop Masking)
 # ----------------------------------------------------------------------------------------------
 def _fit_decay_segment(
     t: np.ndarray,
@@ -603,18 +850,30 @@ def _fit_decay_segment(
     g_total: GravityFit,
     v_band_deg_s: float = DEFAULT_V_BAND_DEG_S,
     min_speed_deg_s: float = 3.0,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float, float, np.ndarray]:
+    stop_limit_deg: Optional[float] = None,
+    stop_margin_deg: float = 5.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float, float, np.ndarray, int]:
     """Fit J_total * qdd + tau_c_total * tanh(qd/v_band) + b_total * qd = tau_m - g_total(q).
 
-    Masks out near-stationary tail samples where |qd| < min_speed_deg_s and |qdd| is small,
-    so static-friction sticking at rest does not bias the dynamic fit.
+    Masks out near-stationary tail samples and samples near mechanical hard stops so stop impacts
+    do not bias the inertia/friction regression.
     """
     v_band = math.radians(max(v_band_deg_s, 1e-3))
     min_v = math.radians(min_speed_deg_s)
-    # Keep samples where the forearm is genuinely swinging (moving or reversing at peak accel)
     active = (np.abs(qd) >= min_v) | (np.abs(qdd) >= math.radians(25.0))
+
+    stop_masked = 0
+    if stop_limit_deg is not None and math.isfinite(stop_limit_deg):
+        clear_of_stop = np.abs(np.degrees(q)) < (stop_limit_deg - stop_margin_deg)
+        stop_masked = int(np.sum(active & ~clear_of_stop))
+        active = active & clear_of_stop
+
     if int(np.sum(active)) < 30:
         active = np.ones_like(q, dtype=bool)
+        if stop_limit_deg is not None and math.isfinite(stop_limit_deg):
+            clear_of_stop = np.abs(np.degrees(q)) < (stop_limit_deg - stop_margin_deg)
+            if int(np.sum(clear_of_stop)) >= 20:
+                active = clear_of_stop
 
     X = np.column_stack([qdd[active], np.tanh(qd[active] / v_band), qd[active]])
     y = tau_m[active] - g_total.torque(q[active])
@@ -627,7 +886,7 @@ def _fit_decay_segment(
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-12 else math.nan
     rms = float(np.sqrt(np.mean(resid ** 2)))
     cond = float(np.linalg.cond(X))
-    return coef, X, y, r2, rms, cond, active
+    return coef, X, y, r2, rms, cond, active, stop_masked
 
 
 def analyze_free_decay(
@@ -637,6 +896,8 @@ def analyze_free_decay(
     window_s: float = 0.06,
     v_band_deg_s: float = DEFAULT_V_BAND_DEG_S,
     min_speed_deg_s: float = 3.0,
+    stop_limit_deg: Optional[float] = None,
+    stop_margin_deg: float = 5.0,
 ) -> tuple[Optional[PassiveIdResult], Optional[dict]]:
     """Identify total inertia and friction from relaxed free-decay trials, then subtract exo baseline."""
     if g_total is None or g_total.mgl_nm < 0.05:
@@ -653,6 +914,7 @@ def analyze_free_decay(
     per_trial: list[DecayTrialFit] = []
     X_all, y_all = [], []
     plot_trials = []
+    total_stop_masked = 0
 
     for tr_id in sorted(trials):
         seg = trials[tr_id]
@@ -666,10 +928,12 @@ def analyze_free_decay(
         t_u, q, qd, qdd, _ = smooth_kinematics(t, ang, vel, window_s=window_s)
         tau_m = np.interp(t_u, t, tau_m_raw)
 
-        coef, X, y, r2, rms, cond, active = _fit_decay_segment(
+        coef, X, y, r2, rms, cond, active, stop_masked = _fit_decay_segment(
             t_u, q, qd, qdd, tau_m, g_total,
             v_band_deg_s=v_band_deg_s, min_speed_deg_s=min_speed_deg_s,
+            stop_limit_deg=stop_limit_deg, stop_margin_deg=stop_margin_deg,
         )
+        total_stop_masked += stop_masked
         j_tot, tc_tot, b_tot = float(coef[0]), float(coef[1]), float(coef[2])
         wn = math.sqrt(g_total.mgl_nm / j_tot) if j_tot > 0 else math.nan
         fn = wn / (2.0 * math.pi) if math.isfinite(wn) else math.nan
@@ -729,30 +993,18 @@ def analyze_free_decay(
     tc_cuff = tc_tot - exo_baseline.coulomb_nm
     b_cuff = b_tot - exo_baseline.viscous_nm_s_rad
 
-    warnings: list[str] = []
-    if r2 < 0.85:
+    warnings = _build_passive_warnings(r2, j_human, tc_cuff, b_cuff, cond, method="free_decay")
+    if total_stop_masked > 0:
         warnings.append(
-            f"Low pooled R^2 ({r2:.3f}): subject may not have been fully relaxed during free decay, "
-            "or static gravity calibration has an offset."
+            f"Masked {total_stop_masked} samples within {stop_margin_deg:.1f} deg of hard stop; "
+            "use --phase-c-mode chirp on hard-stop-limited rigs for clean inertia ID."
         )
-    if j_human <= 0:
+    # Check whether vertical hanging equilibrium lies outside the joint stroke
+    q_eq_deg = ((g_total.horizontal_angle_deg - 90.0 + 180.0) % 360.0) - 180.0
+    if stop_limit_deg is not None and abs(q_eq_deg) > (stop_limit_deg - stop_margin_deg):
         warnings.append(
-            f"Estimated human inertia is non-positive ({j_human * 1e3:+.2f} e-3 kg m^2): "
-            "check exo baseline J_exo and Phase A gravity calibration."
-        )
-    elif not (0.015 <= j_human <= 0.12):
-        warnings.append(
-            f"Estimated human forearm inertia ({j_human * 1e3:.2f} e-3 kg m^2) is outside the typical "
-            "adult forearm+hand range (30-80 e-3 kg m^2); verify relaxation and cuff alignment."
-        )
-    if tc_cuff < -0.02 or b_cuff < -0.01:
-        warnings.append(
-            f"Negative interface friction component (coulomb {tc_cuff:+.4f} Nm, viscous {b_cuff:+.4f} Nm s/rad): "
-            "possible subtle muscle assistance or exo baseline friction mismatch."
-        )
-    if cond > 100.0:
-        warnings.append(
-            f"High regression condition number ({cond:.1f}): include wider swing amplitudes and speeds."
+            f"Gravity equilibrium ({q_eq_deg:+.1f} deg) lies outside the +/-{stop_limit_deg:.1f} deg stops: "
+            "free-decay oscillation is mechanically blocked; re-run with --phase-c-mode chirp."
         )
 
     result = PassiveIdResult(
@@ -770,10 +1022,11 @@ def analyze_free_decay(
         cond_number=cond,
         n_trials=len(per_trial),
         n_samples=int(Xp.shape[0]),
+        method="free_decay",
         per_trial=per_trial,
         warnings=warnings,
     )
-    return result, {"trials": plot_trials, "pooled_coef": coef}
+    return result, {"method": "free_decay", "trials": plot_trials, "pooled_coef": coef}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -827,7 +1080,6 @@ def analyze_loadcell_validation(
     r_mat = np.corrcoef(tau_lc, tau_h_hat)
     pearson_r = float(r_mat[0, 1]) if np.isfinite(r_mat[0, 1]) else math.nan
 
-    # Regress residual (tau_lc - tau_h_hat) on cuff-side inertial & frictional terms
     v_band = math.radians(max(v_band_deg_s, 1e-3))
     X = np.column_stack([qdd, np.tanh(qd / v_band), qd])
     coef, *_ = np.linalg.lstsq(X, diff, rcond=None)
@@ -859,6 +1111,8 @@ def run_full_analysis(
     arm_mgl_nm: Optional[float] = None,
     arm_horizontal_deg: float = 0.0,
     loadcell_csv: Optional[Path] = None,
+    stop_limit_deg: Optional[float] = None,
+    stop_margin_deg: float = 5.0,
 ) -> tuple[PassiveAnalysisReport, dict]:
     """Run complete Experiment 2 analysis on a passive_exo CSV file."""
     records = load_passive_csv(Path(csv_path))
@@ -877,7 +1131,7 @@ def run_full_analysis(
             "Reported J_human equals J_total until J_exo is provided."
         )
 
-    # Phase A: Static gravity calibration (or anthropometric fallback)
+    # Phase A: Static gravity calibration (optional for relaxed_chirp, required for free_decay)
     g_total, g_arm = fit_gravity_from_holds(records, exo_baseline)
     if g_total is None and arm_mgl_nm is not None:
         g_total, g_arm = gravity_from_anthropometrics(arm_mgl_nm, arm_horizontal_deg, exo_baseline)
@@ -885,22 +1139,41 @@ def run_full_analysis(
             f"Using user-supplied anthropometric forearm gravity m*g*l = {arm_mgl_nm:.3f} Nm "
             f"(horizontal at {arm_horizontal_deg:+.1f} deg)."
         )
-    elif g_total is None:
-        notes.append(
-            "No Phase A static gravity holds found and no --arm-mgl supplied: "
-            "free-decay inertia/friction identification requires a known gravity scale."
-        )
 
     # Phase B: Active human swings (transparency)
     transparency, active_series = analyze_active_swing(
         records, exo_baseline, window_s=window_s, v_band_deg_s=v_band_deg_s
     )
 
-    # Phase C: Relaxed free-decay swings (inertia + cuff friction ID)
-    passive_id, decay_series = analyze_free_decay(
-        records, exo_baseline, g_total,
-        window_s=window_s, v_band_deg_s=v_band_deg_s, min_speed_deg_s=min_speed_deg_s,
-    )
+    # Phase C: Auto-detect relaxed_chirp (preferred) vs legacy free_decay
+    has_chirp = any(r["fresh"] == 1 and r["phase"].startswith("relaxed_chirp") for r in records)
+    has_decay = any(r["fresh"] == 1 and r["phase"].startswith("free_decay") for r in records)
+
+    passive_id: Optional[PassiveIdResult] = None
+    phase_c_series: Optional[dict] = None
+    if has_chirp:
+        passive_id, phase_c_series = analyze_relaxed_chirp(
+            records, exo_baseline,
+            window_s=min(window_s, 0.04),
+            v_band_deg_s=v_band_deg_s,
+            min_speed_deg_s=min(min_speed_deg_s, 2.0),
+            stop_limit_deg=stop_limit_deg,
+            stop_margin_deg=stop_margin_deg,
+        )
+    elif has_decay:
+        if g_total is None:
+            notes.append(
+                "No Phase A static gravity holds found and no --arm-mgl supplied: "
+                "free-decay inertia/friction identification requires a known gravity scale."
+            )
+        else:
+            passive_id, phase_c_series = analyze_free_decay(
+                records, exo_baseline, g_total,
+                window_s=window_s, v_band_deg_s=v_band_deg_s,
+                min_speed_deg_s=min_speed_deg_s,
+                stop_limit_deg=stop_limit_deg,
+                stop_margin_deg=stop_margin_deg,
+            )
 
     # Optional loadcell cross-validation
     loadcell = analyze_loadcell_validation(
@@ -922,7 +1195,7 @@ def run_full_analysis(
     artifacts = {
         "records": records,
         "active_series": active_series,
-        "decay_series": decay_series,
+        "decay_series": phase_c_series,
     }
     return report, artifacts
 
@@ -939,9 +1212,14 @@ def format_summary(report: PassiveAnalysisReport) -> str:
 
     if report.gravity_total is not None and report.gravity_arm is not None:
         gt, ga = report.gravity_total, report.gravity_arm
+        stict_note = (
+            f", stiction half-width {gt.stiction_halfwidth_nm:.3f} Nm"
+            if math.isfinite(gt.stiction_halfwidth_nm)
+            else ""
+        )
         lines += [
             "",
-            f"  [Phase A] Static Gravity ({gt.source}, {gt.n_angles} hold angles):",
+            f"  [Phase A] Static Gravity ({gt.source}, {gt.n_angles} hold angles{stict_note}):",
             f"    total (exo + arm) : m*g*l = {gt.mgl_nm:.3f} Nm (horizontal at {gt.horizontal_angle_deg:+.1f} deg)",
             f"    human forearm     : m*g*l = {ga.mgl_nm:.3f} Nm (horizontal at {ga.horizontal_angle_deg:+.1f} deg)",
         ]
@@ -970,21 +1248,35 @@ def format_summary(report: PassiveAnalysisReport) -> str:
 
     if report.passive_id is not None:
         pid = report.passive_id
+        title = (
+            "Relaxed Motor-Driven Chirp System ID"
+            if pid.method == "relaxed_chirp"
+            else "Passive Free-Decay System ID"
+        )
         lines += [
             "",
-            f"  [Phase C] Passive Free-Decay System ID ({pid.n_trials} trials, {pid.n_samples} samples):",
+            f"  [Phase C] {title} ({pid.n_trials} trial(s), {pid.n_samples} samples):",
             f"    J_total           : {pid.j_total_kg_m2 * 1e3:.3f} +/- {pid.j_total_se_kg_m2 * 1e3:.3f} e-3 kg m^2",
             f"    J_human (forearm) : {pid.j_human_kg_m2 * 1e3:.3f} e-3 kg m^2  (J_total - J_exo)",
             f"    coulomb_total     : {pid.coulomb_total_nm:.4f} +/- {pid.coulomb_total_se_nm:.4f} Nm",
             f"    coulomb_cuff      : {pid.coulomb_cuff_nm:.4f} Nm  (skin-cuff + passive elbow)",
             f"    viscous_total     : {pid.viscous_total_nm_s_rad:.4f} +/- {pid.viscous_total_se_nm_s_rad:.4f} Nm s/rad",
             f"    viscous_cuff      : {pid.viscous_cuff_nm_s_rad:.4f} Nm s/rad  (skin-cuff + passive elbow)",
-            f"    fit quality       : R^2 = {pid.r2:.4f}, residual RMS = {pid.rms_residual_nm:.4f} Nm, "
-            f"cond(X) = {pid.cond_number:.1f}",
         ]
-        if pid.per_trial:
+        if pid.method == "relaxed_chirp" and math.isfinite(pid.k_eff_nm_rad):
+            lines.append(
+                f"    passive stiffness : k_eff = {pid.k_eff_nm_rad:+.3f} Nm/rad, "
+                f"static offset tau_0 = {pid.tau_offset_nm:+.3f} Nm"
+            )
+        lines.append(
+            f"    fit quality       : R^2 = {pid.r2:.4f}, residual RMS = {pid.rms_residual_nm:.4f} Nm, "
+            f"cond(X) = {pid.cond_number:.1f}"
+        )
+        if pid.per_trial and (pid.method != "relaxed_chirp" or len(pid.per_trial) > 1):
             lines.append("    per-trial breakdown:")
-            lines.append(f"      {'trial':>5} {'dur s':>6} {'span':>6} {'J_tot e-3':>10} {'tc Nm':>8} {'b':>8} {'R^2':>7} {'fn Hz':>7}")
+            lines.append(
+                f"      {'trial':>5} {'dur s':>6} {'span':>6} {'J_tot e-3':>10} {'tc Nm':>8} {'b':>8} {'R^2':>7} {'fn Hz':>7}"
+            )
             for pt in pid.per_trial:
                 lines.append(
                     f"      {pt.trial:5d} {pt.duration_s:6.2f} {pt.angle_span_deg:6.1f} "
