@@ -121,7 +121,7 @@ def main() -> None:
                 if t >= DURATION_S + 0.5:  # a little longer, to settle at 0 deg
                     print()
                     break
-            LOGGER.flush_buffer()
+            # LOGGER.flush_buffer()  # flushed safely after motor.stop()
 
             # Back to 0 deg
             if not DRY_RUN:

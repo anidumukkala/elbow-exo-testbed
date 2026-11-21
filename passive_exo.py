@@ -249,7 +249,7 @@ def run_phase_a_gravity(
             _append_row(rows, t_elapsed, t0_mono, joint, phase_name, idx)
             if t >= GRAVITY_HOLD_S:
                 break
-        LOGGER.flush_buffer()
+        # LOGGER.flush_buffer()  # flushed safely after motor.stop()
         LOGGER.info(
             f"    settled at {joint.angle_deg:+.2f} deg | holding torque {joint.torque_nm:+.3f} Nm"
         )
@@ -311,7 +311,7 @@ def run_phase_b_active_swing(
         if t >= duration_s:
             print()
             break
-    LOGGER.flush_buffer()
+    # LOGGER.flush_buffer()  # flushed safely after motor.stop()
 
 
 def run_phase_c_free_decay(
@@ -381,7 +381,7 @@ def run_phase_c_free_decay(
                 print()
                 LOGGER.info(f"  Trial {trial} reached max duration ({max_duration_s:g} s)")
                 break
-        LOGGER.flush_buffer()
+        # LOGGER.flush_buffer()  # flushed safely after motor.stop()
 
 
 def main() -> None:

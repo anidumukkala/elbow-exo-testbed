@@ -18,6 +18,7 @@ test-passive = "python tests/test_passive_pipeline.py"
 [dependencies]
 python = "3.12.*"
 numpy = "<2"
+matplotlib = ">=3.11.2,<4"
 
 [pypi-dependencies]
 damiao-motor = ">=1.0.6, <2"
