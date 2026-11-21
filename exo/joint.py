@@ -398,14 +398,16 @@ class Joint:
         """Messages and the per-tick CSV to logs/<name>_<date>_<time>.log / .csv (with _2, _3, ...
         if two runs start within the same second). Returns the path without extension."""
         LOGGER.reset()  # one shared logger: drop what an earlier run in this Python session tracked
-        LOGGER.set_log_path(LOG_DIR)
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
-        run = base = f"{name}_{datetime.now():%Y%m%d_%H%M%S}"
+        ts = f"{datetime.now():%Y%m%d_%H%M%S}"
+        run_dir = LOG_DIR / ts
+        run_dir.mkdir(parents=True, exist_ok=True)
+        LOGGER.set_log_path(run_dir)
+        run = base = f"{name}_{ts}"
         n = 2
-        while (LOG_DIR / f"{run}.log").exists():
+        while (run_dir / f"{run}.log").exists():
             run, n = f"{base}_{n}", n + 1
         LOGGER.set_file_name(run)
-        return LOG_DIR / run
+        return run_dir / run
 
     def _track(self) -> None:
         """The CSV columns, logged on every update()."""

@@ -149,7 +149,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def _find_latest_frf() -> Optional[Path]:
-    candidates = sorted(LOG_DIR.glob("free_chirp_*_frf.csv"))
+    candidates = sorted(LOG_DIR.rglob("free_chirp_*_frf.csv"))
     return candidates[-1] if candidates else None
 
 

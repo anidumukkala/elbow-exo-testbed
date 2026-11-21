@@ -67,7 +67,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def _resolve_latest(pattern: str) -> Optional[Path]:
-    matches = sorted(LOG_DIR.glob(pattern))
+    matches = sorted(LOG_DIR.rglob(pattern))
     return matches[-1] if matches else None
 
 
