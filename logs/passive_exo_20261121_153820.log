@@ -1,0 +1,33 @@
+[2026-11-21 15:38:20,696] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-21 15:38:20,815] DEBUG: registers: {'TIMEOUT': 2001, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-21 15:38:20,886] INFO: Motor ready: position -1.7573 rad, status DISABLED, MOS 29 C, rotor 26 C
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: t_s
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: tick_ms
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: rtt_ms
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: fresh
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: phase
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: mode
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: lag_deg
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: angle_deg
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: torque_nm
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: motor_rad
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: t_mos_c
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-21 15:38:20,886] DEBUG: Started tracking variable: status
+[2026-11-21 15:38:20,886] INFO: Phase A: Static gravity calibration (relaxed forearm + exo)
+[2026-11-21 15:38:20,886] INFO:   DRY RUN: skipping active position holds in Phase A
+[2026-11-21 15:38:20,886] INFO: Phase B: Active zero-torque swing test (30 s)
+[2026-11-21 15:38:40,881] INFO:   Phase B stopped early by operator at t = 1.2 s
+[2026-11-21 15:38:40,920] INFO: Phase C: Relaxed free-decay trials (3 trials, max 8 s each)
+[2026-11-21 15:38:45,464] INFO:   Trial 1 ended by operator at t = 1.19 s
+[2026-11-21 15:38:52,603] INFO:   Trial 2 ended by operator at t = 1.87 s
+[2026-11-21 15:38:56,718] INFO:   Trial 3 ended by operator at t = 1.99 s
+[2026-11-21 15:38:56,726] INFO: Passive exo test complete. Motor releasing.
+[2026-11-21 15:38:56,727] INFO: Motor disabled
+[2026-11-21 15:38:56,728] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_153820.csv
+[2026-11-21 15:38:56,754] INFO: Saved data: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_153820_passive.csv

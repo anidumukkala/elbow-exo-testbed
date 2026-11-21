@@ -1,0 +1,25 @@
+[2026-11-21 16:26:12,665] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-21 16:26:12,782] DEBUG: registers: {'TIMEOUT': 0, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-21 16:26:12,852] INFO: Motor ready: position -2.8056 rad, status DISABLED, MOS 29 C, rotor 27 C
+[2026-11-21 16:26:12,852] DEBUG: Started tracking variable: t_s
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: tick_ms
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: rtt_ms
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: fresh
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: phase
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: mode
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: lag_deg
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: angle_deg
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: torque_nm
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: motor_rad
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: t_mos_c
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-21 16:26:12,853] DEBUG: Started tracking variable: status
+[2026-11-21 16:26:12,853] DEBUG: settings: chirp 0.5 -> 10 Hz in 60 s at 500 Hz; amplitude 3 deg limited by 120 deg/s and 2500 deg/s^2 (0.63 deg at 10 Hz); kp 20, kd 0.3
+[2026-11-21 16:26:12,853] ERROR: ABORTED: CalibrationError: the motor was not homed since it was powered up; run homing first (pixi run home-auto or home-manual)
+[2026-11-21 16:26:12,854] INFO: Motor disabled
+[2026-11-21 16:26:12,854] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/free_chirp_20261121_162612.csv

@@ -1,0 +1,28 @@
+Free chirp free_chirp_20261121_155950
+  settings: chirp 0.5 -> 10 Hz in 60 s at 500 Hz; amplitude 3 deg limited by 60 deg/s and 600 deg/s^2 (0.15 deg at 10 Hz); kp 20, kd 0.3
+  loop: 20000 ticks, tick median 2.00 ms, max 33.55 ms; missed replies 6 (0.03 %)
+  peaks: |torque| 0.701 Nm, |angle| 2.97 deg, |angle - reference| 0.73 deg
+  responses (track = measured / reference angle, phase < 0 = lags; J = inertia, c = damping):
+     f Hz   A deg   track  ph deg  tau Nm    J e-3       c
+     0.64   3.000   0.956    -3.7   0.534  -27.973  2.6532
+     0.70   3.000   0.959    -3.6   0.535  -17.718  2.4096
+     0.77   3.000   0.960    -3.5   0.531  -16.087  2.1705
+     0.85   3.000   0.966    -3.6   0.533  -10.515  1.9689
+     0.94   3.000   0.969    -3.4   0.528  -10.045  1.7681
+     1.00   3.000   0.969    -3.4   0.530   -9.099  1.6621
+     1.10   3.000   0.972    -3.3   0.528   -7.764  1.5008
+     1.21   3.000   0.973    -3.3   0.522   -6.713  1.3465
+     1.33   3.000   0.968    -3.5   0.529   -7.616  1.2443
+     1.47   3.000   0.967    -3.6   0.535   -8.315  1.1430
+     1.61   3.000   0.981    -3.7   0.534   -4.103  1.0232
+     1.78   3.000   0.988    -4.0   0.540   -1.654  0.9340
+     1.96   3.000   0.995    -4.2   0.542   -0.704  0.8453
+     2.15   3.000   1.004    -4.6   0.549    0.397  0.7719
+     2.37   2.704   1.009    -5.3   0.550    0.752  0.7755
+     2.53   2.388   1.022    -6.4   0.557    2.638  0.8226
+     2.78   1.967   1.026    -7.8   0.553    3.051  0.8970
+     3.06   1.619   1.025    -9.6   0.555    3.194  0.9935
+     3.37   1.338   0.992   -11.4   0.555    1.758  1.1306
+     3.71   1.136   0.983   -13.7   0.553    4.992  1.2122
+  inertia fit over 2.2-3.7 Hz: J = 5.963 e-3 kg m^2 (link + motor), k0 = +1.05 Nm/rad (near 0 if gravity is compensated)
+  NOTE: k0 far from 0: where the amplitude is small (high frequencies), friction acts like a spring, which biases this fit; trust the J column where the amplitude is larger, or rerun with a larger amplitude / acceleration limit

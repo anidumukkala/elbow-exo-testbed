@@ -1,0 +1,35 @@
+[2026-11-21 16:36:54,598] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-21 16:36:54,719] DEBUG: registers: {'TIMEOUT': 2001, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-21 16:36:54,790] INFO: Motor ready: position -2.6179 rad, status DISABLED, MOS 29 C, rotor 27 C
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: t_s
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: tick_ms
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: rtt_ms
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: fresh
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: phase
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: mode
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: lag_deg
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: angle_deg
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: torque_nm
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: motor_rad
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: t_mos_c
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-21 16:36:54,790] DEBUG: Started tracking variable: status
+[2026-11-21 16:36:54,791] INFO: Resumed homing from 2026-11-21T16:27:10-05:00 (auto): joint at +10.80 deg, stops at +/-60.8 deg, with friction/gravity compensation
+[2026-11-21 16:36:54,791] INFO: Phase A: Static gravity calibration (relaxed forearm + exo)
+[2026-11-21 16:37:15,721] INFO:   Phase A hold 1/3: moving slowly to -25.0 deg
+[2026-11-21 16:37:20,926] INFO:     settled at -25.33 deg | holding torque +0.286 Nm
+[2026-11-21 16:37:20,927] INFO:   Phase A hold 2/3: moving slowly to +0.0 deg
+[2026-11-21 16:37:25,418] INFO:     settled at +1.84 deg | holding torque -0.872 Nm
+[2026-11-21 16:37:25,418] INFO:   Phase A hold 3/3: moving slowly to +25.0 deg
+[2026-11-21 16:37:29,767] INFO:     settled at +27.52 deg | holding torque -1.077 Nm
+[2026-11-21 16:37:29,768] INFO: Phase B: Active zero-torque swing test (30 s)
+[2026-11-21 16:37:29,773] ERROR: ABORTED: JointError: measured torque -0.716 Nm exceeded 0.50 Nm while commanding 0 Nm
+[2026-11-21 16:37:29,774] INFO: Motor disabled
+[2026-11-21 16:37:29,870] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_163654.csv
+[2026-11-21 16:37:29,890] INFO: Saved data: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_163654_passive.csv
+[2026-11-21 16:37:29,912] INFO: Saved analysis: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_163654_summary.txt, /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_163654_analysis.json

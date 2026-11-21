@@ -1,0 +1,28 @@
+[2026-11-21 15:21:42,150] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-21 15:21:42,270] DEBUG: registers: {'TIMEOUT': 2001, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-21 15:21:42,341] INFO: Motor ready: position -1.7561 rad, status DISABLED, MOS 28 C, rotor 26 C
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: t_s
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: tick_ms
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: rtt_ms
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: fresh
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: phase
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: mode
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: lag_deg
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: angle_deg
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: torque_nm
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: motor_rad
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: t_mos_c
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-21 15:21:42,341] DEBUG: Started tracking variable: status
+[2026-11-21 15:21:42,341] INFO: Resumed homing from 2026-11-21T15:07:03-05:00 (auto): joint at +60.08 deg, stops at +/-60.7 deg, with friction/gravity compensation
+[2026-11-21 15:21:42,342] INFO: Phase A: Static gravity calibration (relaxed forearm + exo)
+[2026-11-21 15:21:53,046] INFO:   Phase A hold 1/3: moving slowly to -25.0 deg
+[2026-11-21 15:21:53,505] CRITICAL: MOTOR FAULT: measured torque -1.502 Nm exceeds 1.5 Nm. Motor disabled and latched off.
+[2026-11-21 15:21:53,505] ERROR: ABORTED: MotorFault: measured torque -1.502 Nm exceeds 1.5 Nm
+[2026-11-21 15:21:53,506] INFO: Motor disabled
+[2026-11-21 15:21:53,508] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_152142.csv

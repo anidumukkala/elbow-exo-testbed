@@ -1,0 +1,29 @@
+[2026-11-21 15:50:27,596] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-21 15:50:27,712] DEBUG: registers: {'TIMEOUT': 2001, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-21 15:50:27,783] INFO: Motor ready: position -2.8120 rad, status DISABLED, MOS 29 C, rotor 27 C
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: t_s
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: tick_ms
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: rtt_ms
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: fresh
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: phase
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: mode
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: lag_deg
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: angle_deg
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: torque_nm
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: motor_rad
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: t_mos_c
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-21 15:50:27,783] DEBUG: Started tracking variable: status
+[2026-11-21 15:50:27,783] DEBUG: settings: chirp 0.5 -> 10 Hz in 60 s at 500 Hz; amplitude 3 deg limited by 60 deg/s and 600 deg/s^2 (0.15 deg at 10 Hz); kp 20, kd 0.3
+[2026-11-21 15:50:27,784] INFO: Resumed homing from 2026-11-21T15:49:34-05:00 (auto): joint at -0.29 deg, stops at +/-60.8 deg, with friction/gravity compensation
+[2026-11-21 15:50:28,726] INFO: Holding torque at 0 deg: -0.103 Nm
+[2026-11-21 15:51:10,725] CRITICAL: MOTOR FAULT: motor reported LOST_COMM. Motor disabled and latched off.
+[2026-11-21 15:51:10,726] ERROR: ABORTED: MotorFault: motor reported LOST_COMM
+[2026-11-21 15:51:10,726] INFO: Motor disabled
+[2026-11-21 15:51:10,727] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/free_chirp_20261121_155027.csv
+[2026-11-21 15:51:10,888] INFO: Results: /home/anidumukkala3/elbow-exo-testbed/logs/free_chirp_20261121_155027_chirp.csv, _frf.csv, _summary.txt

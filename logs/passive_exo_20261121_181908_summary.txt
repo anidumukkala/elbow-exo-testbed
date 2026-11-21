@@ -1,0 +1,30 @@
+Passive Exo Analysis: passive_exo_20261121_181908_passive.csv
+  sampling : 500.0 Hz effective, 99.98% fresh replies
+  exo base : J_exo = 2.135 e-3 kg m^2, coulomb = 0.4617 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.152 Nm):
+    total (exo + arm) : m*g*l = 1.484 Nm (horizontal at -169.2 deg)
+    human forearm     : m*g*l = 1.357 Nm (horizontal at -175.5 deg)
+
+  [Phase B] Active Zero-Torque Swing Transparency (29.9 s, 14971 samples):
+    kinematics        : angle [-21.0, +46.4] deg, peak |v| = 327.8 deg/s, peak |a| = 4866 deg/s^2
+    motor 0-Nm ripple : RMS = 0.0363 Nm, peak = 0.1853 Nm
+    interaction tau_h : RMS = 0.4558 Nm, peak = 0.9319 Nm
+      breakdown (RMS) : inertia 0.0431 Nm | friction 0.4223 Nm | gravity 0.1208 Nm
+    mechanical work   : 16.531 J (0.552 W mean)
+    speed-binned resistance:
+      slow (<60 deg/s)       RMS tau_h = 0.4044 Nm, peak = 0.9217 Nm (n=7297)
+      medium (60-150 deg/s)  RMS tau_h = 0.5078 Nm, peak = 0.9319 Nm (n=6744)
+      fast (>=150 deg/s)     RMS tau_h = 0.4378 Nm, peak = 0.8892 Nm (n=930)
+
+  [Phase C] Relaxed Motor-Driven Chirp System ID (1 trial(s), 14190 samples):
+    J_total           : 7.452 +/- 0.196 e-3 kg m^2
+    J_human (forearm) : 5.317 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.3259 +/- 0.0034 Nm
+    coulomb_cuff      : -0.1358 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.3149 +/- 0.0044 Nm s/rad
+    viscous_cuff      : 0.3149 Nm s/rad  (skin-cuff + passive elbow)
+    passive stiffness : k_eff = -0.463 Nm/rad, static offset tau_0 = -1.015 Nm
+    fit quality       : R^2 = 0.8590, residual RMS = 0.2235 Nm, cond(X) = 189.2
+    WARNING: Estimated human forearm inertia (5.32 e-3 kg m^2) is outside the typical adult forearm+hand range (30-80 e-3 kg m^2); verify relaxation and cuff alignment.
+    WARNING: Negative interface friction component (coulomb -0.1358 Nm, viscous +0.3149 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor).

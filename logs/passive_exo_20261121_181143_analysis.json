@@ -1,0 +1,126 @@
+{
+  "csv_path": "/home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_181143_passive.csv",
+  "sample_rate_hz": 499.99999999983305,
+  "fresh_fraction": 0.9998090145148969,
+  "exo_baseline": {
+    "inertia_kg_m2": 0.0021353814672645855,
+    "coulomb_nm": 0.461693643982552,
+    "viscous_nm_s_rad": 0.0,
+    "gravity_cos_nm": -0.10460258245501432,
+    "gravity_sin_nm": -0.17224348976032117,
+    "source_cal": "/home/anidumukkala3/elbow-exo-testbed/calibration/joint_cal.json",
+    "source_frf": "/home/anidumukkala3/elbow-exo-testbed/logs/free_chirp_20261121_162757_frf.csv"
+  },
+  "gravity_total": {
+    "gravity_cos_nm": -0.11705254714756468,
+    "gravity_sin_nm": -0.4288327359476394,
+    "mgl_nm": 0.4445208816400762,
+    "horizontal_angle_deg": -105.26732563298197,
+    "fit_rms_nm": 0.011910151490702478,
+    "n_angles": 3,
+    "hold_angles_deg": [
+      -25.091832712765957,
+      -0.02104130452127667,
+      25.1034
+    ],
+    "hold_torques_nm": [
+      0.06686273936170216,
+      -0.100635579787234,
+      -0.29689817446808514
+    ],
+    "source": "measured_bidirectional",
+    "bidirectional": true,
+    "stiction_halfwidth_nm": 0.32275990460992915
+  },
+  "gravity_arm": {
+    "gravity_cos_nm": -0.012449964692550358,
+    "gravity_sin_nm": -0.2565892461873182,
+    "mgl_nm": 0.256891110939678,
+    "horizontal_angle_deg": -92.77786944393013,
+    "fit_rms_nm": 0.011910151490702478,
+    "n_angles": 3,
+    "hold_angles_deg": [
+      -25.091832712765957,
+      -0.02104130452127667,
+      25.1034
+    ],
+    "hold_torques_nm": [
+      0.08855054438026252,
+      0.003903740909022027,
+      -0.12910112803640372
+    ],
+    "source": "measured_bidirectional",
+    "bidirectional": true,
+    "stiction_halfwidth_nm": 0.32275990460992915
+  },
+  "transparency": {
+    "duration_s": 2.3480000000028696,
+    "n_samples": 1175,
+    "angle_min_deg": -24.82104231974747,
+    "angle_max_deg": -24.806488087774294,
+    "peak_speed_deg_s": 0.7609259842826315,
+    "rms_speed_deg_s": 0.24630833660121412,
+    "peak_accel_deg_s2": 39.964634219720715,
+    "rms_accel_deg_s2": 12.091962519203895,
+    "peak_motor_torque_nm": 0.00732601,
+    "rms_motor_torque_nm": 0.005554222163160209,
+    "peak_interaction_torque_nm": 0.1838210641594449,
+    "rms_interaction_torque_nm": 0.05889309831646539,
+    "rms_inertial_torque_nm": 0.0004506606400296954,
+    "rms_friction_torque_nm": 0.05599515694816118,
+    "rms_gravity_torque_nm": 0.02266262552047753,
+    "total_work_j": 0.0005693627015632318,
+    "mean_power_w": 0.00024248837374895058,
+    "speed_bins": [
+      {
+        "bin": "slow (<60 deg/s)",
+        "n_samples": 1175,
+        "rms_interaction_nm": 0.05889309831646539,
+        "peak_interaction_nm": 0.1838210641594449,
+        "rms_motor_nm": 0.005554222163160209
+      }
+    ]
+  },
+  "passive_id": {
+    "j_total_kg_m2": 0.0016538171612281876,
+    "j_total_se_kg_m2": 0.00011140332328618472,
+    "coulomb_total_nm": 0.301716785407786,
+    "coulomb_total_se_nm": 0.002147097989366658,
+    "viscous_total_nm_s_rad": 0.14059226911078374,
+    "viscous_total_se_nm_s_rad": 0.0027754366788923695,
+    "j_human_kg_m2": -0.0004815643060363979,
+    "coulomb_cuff_nm": -0.159976858574766,
+    "viscous_cuff_nm_s_rad": 0.14059226911078374,
+    "r2": 0.8985322533782422,
+    "rms_residual_nm": 0.13210659968608734,
+    "cond_number": 195.76516633268926,
+    "n_trials": 1,
+    "n_samples": 14188,
+    "method": "relaxed_chirp",
+    "k_eff_nm_rad": 0.13824238054854118,
+    "tau_offset_nm": -0.10499929682006542,
+    "per_trial": [
+      {
+        "trial": 1,
+        "duration_s": 30.46200000003723,
+        "n_samples": 14188,
+        "angle_span_deg": 16.05284170236356,
+        "peak_speed_deg_s": 96.7922657481855,
+        "j_total_kg_m2": 0.0016538171612281876,
+        "coulomb_total_nm": 0.301716785407786,
+        "viscous_total_nm_s_rad": 0.14059226911078374,
+        "r2": 0.8985322533782422,
+        "rms_residual_nm": 0.13210659968608734,
+        "cond_number": 195.76516633268926,
+        "natural_freq_hz": NaN,
+        "damping_ratio": NaN
+      }
+    ],
+    "warnings": [
+      "Estimated human inertia is non-positive (-0.48 e-3 kg m^2): check exo baseline J_exo and subject relaxation.",
+      "Negative interface friction component (coulomb -0.1600 Nm, viscous +0.1406 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor)."
+    ]
+  },
+  "loadcell": null,
+  "notes": []
+}

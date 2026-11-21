@@ -1,0 +1,5 @@
+Free chirp free_chirp_20261121_155850
+  settings: chirp 0.5 -> 10 Hz in 60 s at 500 Hz; amplitude 3 deg limited by 60 deg/s and 600 deg/s^2 (0.15 deg at 10 Hz); kp 20, kd 0.3
+  loop: 601 ticks, tick median 2.00 ms, max 2.07 ms; missed replies 0 (0.00 %)
+  peaks: |torque| 0.696 Nm, |angle| 0.76 deg, |angle - reference| 0.95 deg
+  (no responses: dry run, or the sweep was too short to analyse)

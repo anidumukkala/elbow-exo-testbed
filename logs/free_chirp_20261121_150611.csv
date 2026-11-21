@@ -1,0 +1,1 @@
+t_s,tick_ms,rtt_ms,fresh,phase,mode,setpoint_deg,setpoint_vel_deg_s,lag_deg,angle_deg,velocity_deg_s,torque_nm,tau_ff_nm,tau_cmd_nm,motor_rad,t_mos_c,t_rotor_c,status

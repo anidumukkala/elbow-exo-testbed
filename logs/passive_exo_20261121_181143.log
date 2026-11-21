@@ -1,0 +1,38 @@
+[2026-11-21 18:11:43,195] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-21 18:11:43,312] DEBUG: registers: {'TIMEOUT': 2001, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-21 18:11:43,382] INFO: Motor ready: position -2.3833 rad, status DISABLED, MOS 30 C, rotor 27 C
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: t_s
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: tick_ms
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: rtt_ms
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: fresh
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: phase
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: mode
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: lag_deg
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: angle_deg
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: torque_nm
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: motor_rad
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: t_mos_c
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-21 18:11:43,383] DEBUG: Started tracking variable: status
+[2026-11-21 18:11:43,383] INFO: Resumed homing from 2026-11-21T16:27:10-05:00 (auto): joint at +24.24 deg, stops at +/-60.8 deg, with friction/gravity compensation
+[2026-11-21 18:11:43,383] INFO: Phase A: Bidirectional static gravity calibration (relaxed forearm + exo)
+[2026-11-21 18:11:58,413] INFO:     gravity_hold_1_pos: settled at -25.35 deg | holding torque +0.349 Nm
+[2026-11-21 18:12:02,407] INFO:     gravity_hold_2_pos: settled at -0.46 deg | holding torque +0.383 Nm
+[2026-11-21 18:12:06,406] INFO:     gravity_hold_3_pos: settled at +24.92 deg | holding torque -0.095 Nm
+[2026-11-21 18:12:10,138] INFO:     gravity_hold_3_neg: settled at +25.29 deg | holding torque -0.496 Nm
+[2026-11-21 18:12:14,126] INFO:     gravity_hold_2_neg: settled at +0.44 deg | holding torque -0.584 Nm
+[2026-11-21 18:12:18,124] INFO:     gravity_hold_1_neg: settled at -24.85 deg | holding torque -0.217 Nm
+[2026-11-21 18:12:18,125] INFO: Phase B: Active zero-torque swing test (30 s)
+[2026-11-21 18:12:27,147] INFO:   Phase B stopped early by operator at t = 2.4 s
+[2026-11-21 18:12:27,147] INFO: Phase C: Relaxed motor-driven chirp (0.5 -> 6 Hz, 30 s, +/-8 deg around 0 deg)
+[2026-11-21 18:12:30,104] INFO:   Phase C holding torque at 0 deg: -0.085 Nm
+[2026-11-21 18:13:00,607] INFO: Passive exo test complete. Motor releasing.
+[2026-11-21 18:13:00,609] INFO: Motor disabled
+[2026-11-21 18:13:00,782] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_181143.csv
+[2026-11-21 18:13:00,923] INFO: Saved data: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_181143_passive.csv
+[2026-11-21 18:13:01,095] INFO: Saved analysis: /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_181143_summary.txt, /home/anidumukkala3/elbow-exo-testbed/logs/passive_exo_20261121_181143_analysis.json

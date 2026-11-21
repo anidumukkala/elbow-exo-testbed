@@ -1,0 +1,12 @@
+{
+  "created": "2026-11-21T16:49:17-05:00",
+  "rig": "qdd_10to1",
+  "subject": "S01",
+  "dry_run": false,
+  "rate_hz": 500.0,
+  "motor_id": "0x02",
+  "feedback_id": "0x12",
+  "exo_frf": "/home/anidumukkala3/elbow-exo-testbed/logs/free_chirp_20261121_162757_frf.csv",
+  "exo_inertia_override": null,
+  "rows": 26444
+}

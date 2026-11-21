@@ -67,6 +67,5 @@ __pycache__/
 *.py[cod]
 
 # Run logs
-logs/
 
 calibration/

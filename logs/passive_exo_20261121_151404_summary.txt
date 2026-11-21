@@ -1,0 +1,34 @@
+Passive Exo Analysis: passive_exo_20261121_151404_passive.csv
+  sampling : 500.0 Hz effective, 99.97% fresh replies
+  exo base : J_exo = -93.192 e-3 kg m^2, coulomb = 0.4597 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured, 3 hold angles):
+    total (exo + arm) : m*g*l = 0.402 Nm (horizontal at +96.6 deg)
+    human forearm     : m*g*l = 0.562 Nm (horizontal at +84.4 deg)
+
+  [Phase B] Active Zero-Torque Swing Transparency (29.9 s, 14972 samples):
+    kinematics        : angle [-0.4, +41.2] deg, peak |v| = 178.6 deg/s, peak |a| = 3955 deg/s^2
+    motor 0-Nm ripple : RMS = 0.0226 Nm, peak = 0.1538 Nm
+    interaction tau_h : RMS = 1.1745 Nm, peak = 6.6386 Nm
+      breakdown (RMS) : inertia 1.1385 Nm | friction 0.3712 Nm | gravity 0.1460 Nm
+    mechanical work   : 22.045 J (0.736 W mean)
+    speed-binned resistance:
+      slow (<60 deg/s)       RMS tau_h = 0.9617 Nm, peak = 6.4376 Nm (n=11266)
+      medium (60-150 deg/s)  RMS tau_h = 1.6838 Nm, peak = 6.6386 Nm (n=3465)
+      fast (>=150 deg/s)     RMS tau_h = 1.3033 Nm, peak = 3.8696 Nm (n=241)
+
+  [Phase C] Passive Free-Decay System ID (3 trials, 4909 samples):
+    J_total           : 9.883 +/- 0.853 e-3 kg m^2
+    J_human (forearm) : 103.075 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.0654 +/- 0.0048 Nm
+    coulomb_cuff      : -0.3943 Nm  (skin-cuff + passive elbow)
+    viscous_total     : -0.1440 +/- 0.0106 Nm s/rad
+    viscous_cuff      : -0.1440 Nm s/rad  (skin-cuff + passive elbow)
+    fit quality       : R^2 = 0.0250, residual RMS = 0.1505 Nm, cond(X) = 13.4
+    per-trial breakdown:
+      trial  dur s   span  J_tot e-3    tc Nm        b     R^2   fn Hz
+          1   7.94   54.5      3.746  -0.0590   0.0696  -0.021    1.65
+          2   6.87   66.8     19.307   0.2485  -0.5708   0.377    0.73
+          3   7.94   78.9     23.804   0.1241  -0.1974   0.137    0.65
+    WARNING: Low pooled R^2 (0.025): subject may not have been fully relaxed during free decay, or static gravity calibration has an offset.
+    WARNING: Negative interface friction component (coulomb -0.3943 Nm, viscous -0.1440 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch.
