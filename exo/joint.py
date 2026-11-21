@@ -236,7 +236,7 @@ class Joint:
                                      f"{self.angle_deg:+.1f} deg): obstacle?")
             if t >= duration + settle_s:
                 break
-        LOGGER.flush_buffer()
+        # LOGGER.flush_buffer()
         return {"max_lag_deg": max_lag, "peak_torque_nm": peak_torque}
 
     def hold(self, angle_deg: float, seconds: float, phase: str = "hold") -> None:
@@ -246,7 +246,7 @@ class Joint:
             self._hold_step(angle_deg)
             if t >= seconds:
                 break
-        LOGGER.flush_buffer()
+        # LOGGER.flush_buffer()
 
     def hold_until_enter(self, angle_deg: float, prompt: str = "", phase: str = "wait") -> None:
         """Hold angle_deg, showing angle and torque, until Enter is pressed."""
@@ -259,7 +259,7 @@ class Joint:
             if i % 20 == 0:
                 print(f"  angle {self.angle_deg:+7.2f} deg | torque {self.torque_nm:+.3f} Nm", end="\r")
         print()
-        LOGGER.flush_buffer()
+        # LOGGER.flush_buffer()
 
     def measure_holding_torque(self, seconds: float = 0.5, torque_nm: float = 0.0) -> float:
         """Hold the current angle for `seconds` and return the mean measured torque over the second

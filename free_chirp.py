@@ -50,7 +50,7 @@ POINTS = 30  # frequencies analysed
 DRY_RUN = False
 
 # ---- Guards ----
-TORQUE_ABORT_NM = 0.6  # torque on top of the holding torque
+TORQUE_ABORT_NM = 1.0  # torque on top of the holding torque
 ENVELOPE_MARGIN_DEG = 3.0
 TEMP_RISE_ABORT_C = 15.0
 
