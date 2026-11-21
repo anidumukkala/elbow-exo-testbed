@@ -28,7 +28,7 @@ class JointConfig:
     rate_hz: float = 200.0
 
     # --- Safety ---
-    torque_trip_nm: float = 1.5  # any measured torque above this disables the motor
+    torque_trip_nm: float = 5  # any measured torque above this disables the motor
     range_margin_deg: float = 5.0  # once homed: abort if the angle reads this far beyond a stop
     soft_margin_deg: float = 5.0  # once homed: move targets are kept this far inside the stops
 

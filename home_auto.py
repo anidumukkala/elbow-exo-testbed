@@ -29,8 +29,8 @@ from exo.joint import Joint, JointError
 from exo.logs import LOGGER
 
 # ---- Motor ---- (the CAN interface is JointConfig.channel in exo/config.py)
-MOTOR_ID = 0x01
-FEEDBACK_ID = 0x11
+MOTOR_ID = 0x02
+FEEDBACK_ID = 0x12
 
 # ---- Homing settings ----
 FIRST_DIRECTION = +1  # which stop first: +1 = positive joint angle
