@@ -83,7 +83,7 @@ DECAY_REST_S = 1.2
 DECAY_MIN_S = 2.0             # minimum recording time before auto-rest detection activates
 
 # ---- Human-in-the-Loop Safety Guards ----
-ZERO_TORQUE_ABORT_NM = 0.50   # measured torque while commanding 0 Nm
+ZERO_TORQUE_ABORT_NM = 1.0   # measured torque while commanding 0 Nm
 MAX_SWING_SPEED_DEG_S = 400.0 # excessive swing velocity guard
 SOFT_STOP_WARN_DEG = 8.0      # warn in console when within this margin of a hard stop
 TEMP_RISE_ABORT_C = 15.0
