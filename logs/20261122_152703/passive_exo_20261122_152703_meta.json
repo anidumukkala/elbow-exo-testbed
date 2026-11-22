@@ -1,0 +1,14 @@
+{
+  "created": "2026-11-22T15:28:10-05:00",
+  "rig": "qdd_10to1",
+  "subject": "S01",
+  "dry_run": false,
+  "rate_hz": 500.0,
+  "phase_c_mode": "amp_sweep",
+  "motor_id": "0x02",
+  "feedback_id": "0x12",
+  "stop_limit_deg": 60.79471114136722,
+  "exo_frf": "/home/anidumukkala3/elbow-exo-testbed/logs/20261122_150314/free_chirp_20261122_150314_frf.csv",
+  "exo_inertia_override": null,
+  "rows": 19739
+}

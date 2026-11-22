@@ -123,6 +123,8 @@ def generate_plots(
             "gravity_hold": "#fff3cd",
             "active_swing": "#d1ecf1",
             "relaxed_chirp": "#e2d9f3",
+            "amp_sweep": "#d4edda",
+            "multi_amp_sweep": "#cce5ff",
             "free_decay": "#f8d7da",
         }
         i = 0
@@ -188,7 +190,7 @@ def generate_plots(
         fig, (ax1, ax2, ax3) = plt.subplots(
             1, 3, figsize=(13.2, 4.6), gridspec_kw={"width_ratios": [1.55, 0.72, 1.0]}
         )
-        mode_label = "Relaxed Chirp System ID" if is_chirp else "Relaxed Free-Decay System ID"
+        mode_label = "Multi-Freq Amplitude Sweep ID" if pid.method == "multi_amp_sweep" else "Fixed-Freq Amplitude Ramp ID" if pid.method == "amp_sweep" else ("Relaxed Chirp System ID" if is_chirp else "Relaxed Free-Decay System ID")
         fig.suptitle(
             f"Phase C: {mode_label} (Pooled $R^2$ = {pid.r2:.3f}, RMS = {pid.rms_residual_nm:.4f} Nm)",
             fontweight="bold",

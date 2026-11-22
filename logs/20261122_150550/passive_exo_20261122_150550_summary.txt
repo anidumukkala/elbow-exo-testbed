@@ -1,0 +1,23 @@
+Passive Exo Analysis: passive_exo_20261122_150550_passive.csv
+  sampling : 500.0 Hz effective, 99.96% fresh replies
+  exo base : J_exo = 0.799 e-3 kg m^2, coulomb = 0.4446 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.136 Nm):
+    total (exo + arm) : m*g*l = 1.325 Nm (horizontal at +175.6 deg)
+    human forearm     : m*g*l = 1.252 Nm (horizontal at +168.1 deg)
+
+  [Phase C] Fixed-Frequency Amplitude-Ramp System ID (bins 1..3 = small -> large amp) (3 trial(s), 13713 samples):
+    J_total           : 11.464 +/- 0.198 e-3 kg m^2
+    J_human (forearm) : 10.666 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.2812 +/- 0.0022 Nm
+    coulomb_cuff      : -0.1633 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.1697 +/- 0.0025 Nm s/rad
+    viscous_cuff      : 0.1697 Nm s/rad  (skin-cuff + passive elbow)
+    fit quality       : R^2 = 0.8990, residual RMS = 0.1391 Nm, cond(X) = 16.0
+    per-trial breakdown:
+      trial  dur s   span  J_tot e-3    tc Nm        b     R^2   fn Hz
+          1   9.17   14.7     -4.454   0.2753   0.1764   0.894     nan
+          2   9.14   25.1      8.059   0.2661   0.1924   0.951     nan
+          3   9.14   34.5     17.191   0.3070   0.1499   0.958     nan
+    WARNING: Estimated human forearm inertia (10.67 e-3 kg m^2) is outside the typical adult forearm+hand range (30-80 e-3 kg m^2); verify relaxation and cuff alignment.
+    WARNING: Negative interface friction component (coulomb -0.1633 Nm, viscous +0.1697 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor).

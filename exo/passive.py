@@ -838,6 +838,216 @@ def analyze_relaxed_chirp(
     return result, {"method": "relaxed_chirp", "trials": plot_trials, "pooled_coef": coef}
 
 
+
+
+def analyze_multi_amp_sweep(
+    records: list[dict],
+    exo_baseline: ExoBaseline,
+    g_total: Optional[GravityFit] = None,
+    window_s: float = 0.04,
+    v_band_deg_s: float = DEFAULT_V_BAND_DEG_S,
+    min_speed_deg_s: float = 2.0,
+    trim_edge_s: float = 0.8,
+    stop_limit_deg: Optional[float] = None,
+    stop_margin_deg: float = 5.0,
+) -> tuple[Optional[PassiveIdResult], Optional[dict]]:
+    """Identify inertia, Coulomb/viscous friction, and passive elbow stiffness from a multi-frequency
+    amplitude-ramp test (each frequency step logged as phase="multi_amp_sweep", trial=1..N)."""
+    trials: dict[int, list[dict]] = {}
+    for r in records:
+        if r["fresh"] == 1 and r["phase"].startswith("multi_amp_sweep"):
+            trials.setdefault(r["trial"], []).append(r)
+    if not trials:
+        return None, None
+
+    sweep_win = min(window_s, 0.04)
+    v_band = math.radians(max(v_band_deg_s, 1e-3))
+    min_v = math.radians(min_speed_deg_s)
+
+    seg_cache = []
+    X_all, y_all = [], []
+    for tr_id in sorted(trials):
+        seg = trials[tr_id]
+        if len(seg) < 100:
+            continue
+        t = np.array([r["t_sample"] for r in seg], dtype=float)
+        ang = np.array([r["angle_deg"] for r in seg], dtype=float)
+        vel = np.array([r["velocity_deg_s"] for r in seg], dtype=float)
+        tau_m_raw = np.array([r["torque_nm"] for r in seg], dtype=float)
+
+        t_u, q, qd, qdd, _ = smooth_kinematics(t, ang, vel, window_s=sweep_win)
+        tau_m = np.interp(t_u, t, tau_m_raw)
+        t_rel = t_u - t_u[0]
+        dur = float(t_rel[-1])
+
+        active = (t_rel >= trim_edge_s) & (t_rel <= dur - trim_edge_s) if dur > 2.5 * trim_edge_s else np.ones_like(q, dtype=bool)
+        active &= (np.abs(qd) >= min_v) | (np.abs(qdd) >= math.radians(15.0))
+        if stop_limit_deg is not None and math.isfinite(stop_limit_deg):
+            active &= np.abs(np.degrees(q)) < (stop_limit_deg - stop_margin_deg)
+        if int(np.sum(active)) < 40:
+            continue
+
+        y_full = tau_m - g_total.torque(q) if g_total is not None else tau_m
+        X_full = np.column_stack([qdd, np.tanh(qd / v_band), qd, q, np.ones_like(q)])
+        X_all.append(X_full[active])
+        y_all.append(y_full[active])
+        seg_cache.append((tr_id, t_rel, dur, q, qd, qdd, y_full, active))
+
+    if not X_all:
+        return None, None
+
+    Xp = np.vstack(X_all)
+    yp = np.concatenate(y_all)
+    coef, *_ = np.linalg.lstsq(Xp, yp, rcond=None)
+    resid = yp - Xp @ coef
+    dof = max(1, Xp.shape[0] - Xp.shape[1])
+    s2 = float(np.sum(resid ** 2)) / dof
+    se = np.sqrt(np.maximum(0.0, np.diag(s2 * np.linalg.pinv(Xp.T @ Xp))))
+    ss_res = float(np.sum(resid ** 2))
+    ss_tot = float(np.sum((yp - np.mean(yp)) ** 2))
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-12 else math.nan
+    rms = float(np.sqrt(np.mean(resid ** 2)))
+    cond = float(np.linalg.cond(Xp))
+
+    j_tot, tc_tot, b_tot, k_eff, tau_0 = [float(c) for c in coef]
+    j_human = j_tot - exo_baseline.inertia_kg_m2
+    tc_cuff = tc_tot - exo_baseline.coulomb_nm
+    b_cuff = b_tot - exo_baseline.viscous_nm_s_rad
+
+    per_trial: list[DecayTrialFit] = []
+    plot_t, plot_q, plot_qd, plot_act, plot_ym, plot_yf = [], [], [], [], [], []
+    t_offset = 0.0
+    for tr_id, t_rel, dur, q, qd, qdd, y_full, active in seg_cache:
+        q_c = q[active] - np.mean(q[active])
+        f_est = float(np.sqrt(np.mean(qd[active] ** 2)) / max(np.sqrt(np.mean(q_c ** 2)), 1e-6) / (2.0 * math.pi))
+        Xb = np.column_stack([qdd[active], np.tanh(qd[active] / v_band), qd[active], np.ones(int(np.sum(active)))])
+        yb = y_full[active] - k_eff * q[active]
+        cb, *_ = np.linalg.lstsq(Xb, yb, rcond=None)
+        rb = yb - Xb @ cb
+        sst = float(np.sum((yb - np.mean(yb)) ** 2))
+        r2b = 1.0 - float(np.sum(rb ** 2)) / sst if sst > 1e-12 else math.nan
+        per_trial.append(DecayTrialFit(
+            trial=tr_id, duration_s=dur, n_samples=int(np.sum(active)),
+            angle_span_deg=float(np.max(np.degrees(q[active])) - np.min(np.degrees(q[active]))),
+            peak_speed_deg_s=float(np.max(np.abs(np.degrees(qd[active])))),
+            j_total_kg_m2=float(cb[0]), coulomb_total_nm=float(cb[1]), viscous_total_nm_s_rad=float(cb[2]),
+            r2=r2b, rms_residual_nm=float(np.sqrt(np.mean(rb ** 2))), cond_number=float(np.linalg.cond(Xb)),
+            natural_freq_hz=f_est,
+        ))
+        y_fit_seg = j_tot * qdd + tc_tot * np.tanh(qd / v_band) + b_tot * qd + k_eff * q + tau_0
+        plot_t.append(t_rel + t_offset); plot_q.append(np.degrees(q)); plot_qd.append(np.degrees(qd))
+        plot_act.append(active); plot_ym.append(y_full); plot_yf.append(y_fit_seg)
+        t_offset += dur + 0.2
+
+    warnings = _build_passive_warnings(r2, j_human, tc_cuff, b_cuff, cond, method="relaxed_chirp")
+    result = PassiveIdResult(
+        j_total_kg_m2=j_tot, j_total_se_kg_m2=float(se[0]),
+        coulomb_total_nm=tc_tot, coulomb_total_se_nm=float(se[1]),
+        viscous_total_nm_s_rad=b_tot, viscous_total_se_nm_s_rad=float(se[2]),
+        j_human_kg_m2=j_human, coulomb_cuff_nm=tc_cuff, viscous_cuff_nm_s_rad=b_cuff,
+        r2=r2, rms_residual_nm=rms, cond_number=cond, n_trials=len(per_trial), n_samples=int(Xp.shape[0]),
+        method="multi_amp_sweep", k_eff_nm_rad=k_eff, tau_offset_nm=tau_0,
+        per_trial=per_trial, warnings=warnings,
+    )
+    plot_trials = [{
+        "trial": 1, "t": np.concatenate(plot_t), "q_deg": np.concatenate(plot_q),
+        "qd_deg_s": np.concatenate(plot_qd), "active": np.concatenate(plot_act),
+        "y_meas": np.concatenate(plot_ym), "y_fit_trial": np.concatenate(plot_yf),
+    }]
+    return result, {"method": "multi_amp_sweep", "trials": plot_trials, "pooled_coef": coef}
+
+def analyze_amp_sweep(
+    records: list[dict],
+    exo_baseline: ExoBaseline,
+    g_total: Optional[GravityFit] = None,
+    window_s: float = 0.04,
+    v_band_deg_s: float = DEFAULT_V_BAND_DEG_S,
+    min_speed_deg_s: float = 2.0,
+    trim_edge_s: float = 1.5,
+    stop_limit_deg: Optional[float] = None,
+    stop_margin_deg: float = 5.0,
+    n_bins: int = 3,
+) -> tuple[Optional[PassiveIdResult], Optional[dict]]:
+    """Identify inertia and friction from a fixed-frequency amplitude-ramp perturbation."""
+    seg = [r for r in records if r["fresh"] == 1 and r["phase"].startswith("amp_sweep")]
+    if len(seg) < 100:
+        return None, None
+
+    sweep_win = min(window_s, 0.04)
+    v_band = math.radians(max(v_band_deg_s, 1e-3))
+    min_v = math.radians(min_speed_deg_s)
+
+    t = np.array([r["t_sample"] for r in seg], dtype=float)
+    ang = np.array([r["angle_deg"] for r in seg], dtype=float)
+    vel = np.array([r["velocity_deg_s"] for r in seg], dtype=float)
+    tau_m_raw = np.array([r["torque_nm"] for r in seg], dtype=float)
+
+    t_u, q, qd, qdd, _ = smooth_kinematics(t, ang, vel, window_s=sweep_win)
+    tau_m = np.interp(t_u, t, tau_m_raw)
+    t_rel = t_u - t_u[0]
+    dur = float(t_rel[-1])
+
+    active = (t_rel >= trim_edge_s) & (t_rel <= dur - trim_edge_s) if dur > 2.5 * trim_edge_s else np.ones_like(q, dtype=bool)
+    active &= (np.abs(qd) >= min_v) | (np.abs(qdd) >= math.radians(20.0))
+    if stop_limit_deg is not None and math.isfinite(stop_limit_deg):
+        active &= np.abs(np.degrees(q)) < (stop_limit_deg - stop_margin_deg)
+    if int(np.sum(active)) < 50:
+        return None, None
+
+    y_full = tau_m - g_total.torque(q) if g_total is not None else tau_m
+    X_full = np.column_stack([qdd, np.tanh(qd / v_band), qd, np.ones_like(q)])
+    X, y = X_full[active], y_full[active]
+
+    coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+    resid = y - X @ coef
+    dof = max(1, X.shape[0] - X.shape[1])
+    s2 = float(np.sum(resid ** 2)) / dof
+    se = np.sqrt(np.maximum(0.0, np.diag(s2 * np.linalg.pinv(X.T @ X))))
+    ss_res = float(np.sum(resid ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-12 else math.nan
+    rms = float(np.sqrt(np.mean(resid ** 2)))
+    cond = float(np.linalg.cond(X))
+
+    j_tot, tc_tot, b_tot, tau_0 = [float(c) for c in coef]
+    j_human = j_tot - exo_baseline.inertia_kg_m2
+    tc_cuff = tc_tot - exo_baseline.coulomb_nm
+    b_cuff = b_tot - exo_baseline.viscous_nm_s_rad
+
+    per_bin: list[DecayTrialFit] = []
+    idx_active = np.where(active)[0]
+    for b_idx, sl in enumerate(np.array_split(idx_active, max(1, n_bins)), start=1):
+        if len(sl) < 40:
+            continue
+        Xb, yb = X_full[sl], y_full[sl]
+        cb, *_ = np.linalg.lstsq(Xb, yb, rcond=None)
+        rb = yb - Xb @ cb
+        sst = float(np.sum((yb - np.mean(yb)) ** 2))
+        r2b = 1.0 - float(np.sum(rb ** 2)) / sst if sst > 1e-12 else math.nan
+        per_bin.append(DecayTrialFit(
+            trial=b_idx, duration_s=float(t_rel[sl[-1]] - t_rel[sl[0]]), n_samples=int(len(sl)),
+            angle_span_deg=float(np.max(np.degrees(q[sl])) - np.min(np.degrees(q[sl]))),
+            peak_speed_deg_s=float(np.max(np.abs(np.degrees(qd[sl])))),
+            j_total_kg_m2=float(cb[0]), coulomb_total_nm=float(cb[1]), viscous_total_nm_s_rad=float(cb[2]),
+            r2=r2b, rms_residual_nm=float(np.sqrt(np.mean(rb ** 2))), cond_number=float(np.linalg.cond(Xb)),
+        ))
+
+    warnings = _build_passive_warnings(r2, j_human, tc_cuff, b_cuff, cond, method="relaxed_chirp")
+    if g_total is None:
+        warnings.append("Phase A gravity was skipped during single-frequency amp_sweep: run with Phase A enabled for unbiased J_human.")
+
+    result = PassiveIdResult(
+        j_total_kg_m2=j_tot, j_total_se_kg_m2=float(se[0]),
+        coulomb_total_nm=tc_tot, coulomb_total_se_nm=float(se[1]),
+        viscous_total_nm_s_rad=b_tot, viscous_total_se_nm_s_rad=float(se[2]),
+        j_human_kg_m2=j_human, coulomb_cuff_nm=tc_cuff, viscous_cuff_nm_s_rad=b_cuff,
+        r2=r2, rms_residual_nm=rms, cond_number=cond, n_trials=len(per_bin), n_samples=int(X.shape[0]),
+        method="amp_sweep", tau_offset_nm=tau_0, per_trial=per_bin, warnings=warnings,
+    )
+    plot_trials = [{"trial": 1, "t": t_rel, "q_deg": np.degrees(q), "qd_deg_s": np.degrees(qd),
+                    "active": active, "y_meas": y_full, "y_fit_trial": X_full @ coef}]
+    return result, {"method": "amp_sweep", "trials": plot_trials, "pooled_coef": coef}
+
 # ----------------------------------------------------------------------------------------------
 # Phase C (Legacy): Relaxed Free-Decay Swings (with Hard-Stop Masking)
 # ----------------------------------------------------------------------------------------------
@@ -1146,12 +1356,26 @@ def run_full_analysis(
     )
 
     # Phase C: Auto-detect relaxed_chirp (preferred) vs legacy free_decay
+    has_multi = any(r["fresh"] == 1 and r["phase"].startswith("multi_amp_sweep") for r in records)
+    has_amp = any(r["fresh"] == 1 and r["phase"].startswith("amp_sweep") for r in records)
     has_chirp = any(r["fresh"] == 1 and r["phase"].startswith("relaxed_chirp") for r in records)
     has_decay = any(r["fresh"] == 1 and r["phase"].startswith("free_decay") for r in records)
 
     passive_id: Optional[PassiveIdResult] = None
     phase_c_series: Optional[dict] = None
-    if has_chirp:
+    if has_multi:
+        passive_id, phase_c_series = analyze_multi_amp_sweep(
+            records, exo_baseline, g_total=g_total, window_s=min(window_s, 0.04),
+            v_band_deg_s=v_band_deg_s, min_speed_deg_s=min(min_speed_deg_s, 2.0),
+            stop_limit_deg=stop_limit_deg, stop_margin_deg=stop_margin_deg,
+        )
+    elif has_amp:
+        passive_id, phase_c_series = analyze_amp_sweep(
+            records, exo_baseline, g_total=g_total, window_s=min(window_s, 0.04),
+            v_band_deg_s=v_band_deg_s, min_speed_deg_s=min(min_speed_deg_s, 2.0),
+            stop_limit_deg=stop_limit_deg, stop_margin_deg=stop_margin_deg,
+        )
+    elif has_chirp:
         passive_id, phase_c_series = analyze_relaxed_chirp(
             records, exo_baseline,
             window_s=min(window_s, 0.04),
@@ -1249,9 +1473,11 @@ def format_summary(report: PassiveAnalysisReport) -> str:
     if report.passive_id is not None:
         pid = report.passive_id
         title = (
-            "Relaxed Motor-Driven Chirp System ID"
-            if pid.method == "relaxed_chirp"
-            else "Passive Free-Decay System ID"
+            "Multi-Frequency Amplitude-Sweep System ID (fn Hz = step freq)"
+            if pid.method == "multi_amp_sweep"
+            else "Fixed-Frequency Amplitude-Ramp System ID (bins 1..3 = small -> large amp)"
+            if pid.method == "amp_sweep"
+            else ("Relaxed Motor-Driven Chirp System ID" if pid.method == "relaxed_chirp" else "Passive Free-Decay System ID")
         )
         lines += [
             "",
@@ -1263,7 +1489,7 @@ def format_summary(report: PassiveAnalysisReport) -> str:
             f"    viscous_total     : {pid.viscous_total_nm_s_rad:.4f} +/- {pid.viscous_total_se_nm_s_rad:.4f} Nm s/rad",
             f"    viscous_cuff      : {pid.viscous_cuff_nm_s_rad:.4f} Nm s/rad  (skin-cuff + passive elbow)",
         ]
-        if pid.method == "relaxed_chirp" and math.isfinite(pid.k_eff_nm_rad):
+        if pid.method in ("relaxed_chirp", "multi_amp_sweep") and math.isfinite(pid.k_eff_nm_rad):
             lines.append(
                 f"    passive stiffness : k_eff = {pid.k_eff_nm_rad:+.3f} Nm/rad, "
                 f"static offset tau_0 = {pid.tau_offset_nm:+.3f} Nm"

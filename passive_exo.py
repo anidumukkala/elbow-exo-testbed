@@ -94,6 +94,23 @@ DEFAULT_CHIRP_MAX_ACCEL_DEG_S2 = 1200.0
 CHIRP_KP = 20.0
 CHIRP_KD = 0.4
 
+# ---- Phase C Option: Fixed-Frequency Amplitude Ramp ----
+DEFAULT_AMP_SWEEP_FREQ_HZ = 1.0
+DEFAULT_AMP_SWEEP_START_DEG = 2.0
+DEFAULT_AMP_SWEEP_END_DEG = 18.0
+DEFAULT_AMP_SWEEP_DURATION_S = 30.0
+
+# ---- Phase C Default: Multi-Frequency Amplitude Sweep (freq_hz, amp_start_deg, amp_end_deg) ----
+DEFAULT_MULTI_SWEEP_SCHEDULE = (
+    (0.50, 8.0, 22.0),
+    (0.75, 6.0, 18.0),
+    (1.00, 5.0, 16.0),
+    (1.25, 4.0, 13.0),
+    (1.50, 3.0, 11.0),
+    (2.00, 2.0,  8.0),
+)
+DEFAULT_MULTI_STEP_DURATION_S = 8.0
+
 # ---- Phase C Legacy: Free-Decay Settings ----
 DEFAULT_DECAY_TRIALS = 3
 DEFAULT_DECAY_DURATION_S = 8.0
@@ -124,7 +141,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--subject", type=str, default="S01", help="Subject identifier saved in metadata")
     p.add_argument("--swing-duration", type=float, default=DEFAULT_SWING_DURATION_S,
                    help="Phase B active zero-torque swing duration in seconds")
-    p.add_argument("--phase-c-mode", choices=("chirp", "decay"), default="chirp",
+    p.add_argument("--phase-c-mode", choices=("multi_amp_sweep", "chirp", "amp_sweep", "decay"), default="multi_amp_sweep",
                    help="Phase C system-ID method: 'chirp' (default, works with hard stops) or 'decay'")
     p.add_argument("--chirp-duration", type=float, default=DEFAULT_CHIRP_DURATION_S,
                    help="Phase C relaxed chirp duration in seconds (default: 30)")
@@ -134,6 +151,16 @@ def parse_args() -> argparse.Namespace:
                    help="Phase C relaxed chirp start frequency in Hz (default: 0.25)")
     p.add_argument("--chirp-f1", type=float, default=DEFAULT_CHIRP_F1_HZ,
                    help="Phase C relaxed chirp end frequency in Hz (default: 2.0)")
+    p.add_argument("--amp-sweep-freq", type=float, default=DEFAULT_AMP_SWEEP_FREQ_HZ,
+                   help="Phase C amp_sweep fixed frequency in Hz (default: 1.0)")
+    p.add_argument("--amp-sweep-start", type=float, default=DEFAULT_AMP_SWEEP_START_DEG,
+                   help="Phase C amp_sweep starting amplitude in deg (default: 2.0)")
+    p.add_argument("--amp-sweep-end", type=float, default=DEFAULT_AMP_SWEEP_END_DEG,
+                   help="Phase C amp_sweep ending amplitude in deg (default: 18.0)")
+    p.add_argument("--amp-sweep-duration", type=float, default=DEFAULT_AMP_SWEEP_DURATION_S,
+                   help="Phase C amp_sweep duration in seconds (default: 30.0)")
+    p.add_argument("--step-duration", type=float, default=DEFAULT_MULTI_STEP_DURATION_S,
+                   help="Seconds per frequency step in multi_amp_sweep mode (default: 8.0)")
     p.add_argument("--decay-trials", type=int, default=DEFAULT_DECAY_TRIALS,
                    help="Number of Phase C legacy free-decay trials (when --phase-c-mode decay)")
     p.add_argument("--decay-duration", type=float, default=DEFAULT_DECAY_DURATION_S,
@@ -466,6 +493,180 @@ def run_phase_c_relaxed_chirp(
     # LOGGER.flush_buffer()  # flushed safely after motor.stop()
 
 
+
+
+def run_phase_c_multi_amp_sweep(
+    joint: Joint, rows: list, t0_mono: float,
+    schedule: tuple[tuple[float, float, float], ...] = DEFAULT_MULTI_SWEEP_SCHEDULE,
+    step_duration_s: float = DEFAULT_MULTI_STEP_DURATION_S,
+    dry_run: bool = False, rotor_at_start: float = math.nan,
+) -> None:
+    """Phase C (default): stepped-frequency amplitude-ramp sweep (0.5 -> 2.0 Hz) in one continuous run."""
+    total_s = len(schedule) * step_duration_s
+    max_amp = max(max(a0, a1) for _, a0, a1 in schedule)
+    sched_str = ", ".join(f"{f:g}Hz(+/-{a0:g}->{a1:g}deg)" for f, a0, a1 in schedule)
+    LOGGER.info(f"Phase C: Multi-frequency amplitude sweep ({total_s:g} s total): {sched_str}")
+
+    hold_nm = 0.0
+    if not dry_run:
+        joint.move_to(0.0, speed_deg_s=GRAVITY_MOVE_SPEED_DEG_S, accel_deg_s2=GRAVITY_MOVE_ACCEL_DEG_S2, phase="multi_sweep_to_0")
+        hold_nm = joint.measure_holding_torque(torque_nm=joint.compensation_torque(0.0, 0.0))
+        LOGGER.info(f"  Phase C holding torque at 0 deg: {hold_nm:+.3f} Nm")
+        joint.hold_until_enter(
+            0.0,
+            f"Phase C (Multi-Frequency Amplitude Sweep, 0.5 -> 2.0 Hz, {total_s:g} s total):\n"
+            "  Keep your forearm COMPLETELY RELAXED (dead weight) through all 6 frequency steps.\n"
+            "  Press Enter to start (Enter or Ctrl-C stops immediately).",
+            phase="multi_sweep_ready",
+        )
+    else:
+        run_zero_torque_wait(joint, f"Phase C DRY RUN (Multi-Freq Amp Sweep, {total_s:g} s): Press Enter to start.", dry_run, rotor_at_start)
+
+    lead = 0.5 / joint.config.rate_hz
+    envelope = max_amp + CHIRP_ENVELOPE_MARGIN_DEG
+    fade_in_s, fade_out_s = 1.0, 1.0
+    stopped = False
+
+    for step_idx, (freq_hz, a0_deg, a1_deg) in enumerate(schedule, start=1):
+        if stopped:
+            break
+        w = 2.0 * math.pi * freq_hz
+        joint.phase = "multi_amp_sweep"
+
+        def ref_pos(t: float) -> float:
+            if t <= 0.0 or t >= step_duration_s:
+                return 0.0
+            fade = min(1.0, t / fade_in_s, (step_duration_s - t) / fade_out_s)
+            env = 0.5 - 0.5 * math.cos(math.pi * fade)
+            amp = a0_deg + (a1_deg - a0_deg) * (t / max(step_duration_s, 1e-3))
+            return env * amp * math.sin(w * t)
+
+        def ref_state(t: float) -> tuple[float, float]:
+            h = 1e-4
+            return ref_pos(t), (ref_pos(t + h) - ref_pos(t - h)) / (2.0 * h)
+
+        over_t, next_print = 0, 0.0
+        for t in joint.loop():
+            target, target_vel = ref_state(t + lead)
+            if dry_run:
+                joint.idle()
+            else:
+                extra_hold = hold_nm - joint.compensation_torque(0.0, 0.0)
+                ff = joint.compensation_torque(target, target_vel, target - joint.angle_deg) + extra_hold
+                joint.command_position(target, target_vel, ff, kp=CHIRP_KP, kd=CHIRP_KD)
+            joint.update()
+            _append_row(rows, time.monotonic() - t0_mono, t0_mono, joint, "multi_amp_sweep", step_idx)
+
+            if not dry_run and joint.fresh:
+                over_t = over_t + 1 if abs(joint.torque_nm - hold_nm) > CHIRP_TORQUE_ABORT_NM else 0
+                if over_t >= GUARD_CONFIRM_TICKS:
+                    raise JointError(f"Phase C torque {joint.torque_nm:+.3f} Nm exceeded +/-{CHIRP_TORQUE_ABORT_NM:g} Nm guard at {freq_hz:g} Hz")
+                if abs(joint.angle_deg) > envelope:
+                    raise JointError(f"Phase C angle {joint.angle_deg:+.2f} deg exceeded +/-{envelope:.1f} deg envelope")
+                if math.isfinite(rotor_at_start) and (joint.motor.rotor_temperature - rotor_at_start) > TEMP_RISE_ABORT_C:
+                    raise JointError(f"rotor temperature rose by more than {TEMP_RISE_ABORT_C:g} C")
+
+            if enter_pressed():
+                print()
+                LOGGER.info(f"  Phase C multi_amp_sweep stopped early at step {step_idx} ({freq_hz:g} Hz)")
+                stopped = True
+                break
+            if t >= next_print:
+                cur_amp = a0_deg + (a1_deg - a0_deg) * min(1.0, t / max(step_duration_s, 1e-3))
+                print(
+                    f"  [Step {step_idx}/{len(schedule)} | {freq_hz:4.2f} Hz] t {t:4.1f}/{step_duration_s:3.0f} s | "
+                    f"A {cur_amp:4.1f} deg | angle {joint.angle_deg:+6.2f} deg | tau {joint.torque_nm:+.3f} Nm",
+                    end="\r",
+                )
+                next_print = t + 0.5
+            if t >= step_duration_s:
+                break
+        print()
+
+    if not dry_run:
+        joint.command_torque(0.0)
+        joint.update()
+
+
+def run_phase_c_amp_sweep(
+    joint: Joint, rows: list, t0_mono: float, freq_hz: float,
+    amp_start_deg: float, amp_end_deg: float, duration_s: float,
+    dry_run: bool, rotor_at_start: float,
+) -> None:
+    """Phase C option: fixed-frequency sinusoidal sweep with linearly ramping amplitude around 0 deg."""
+    w = 2.0 * math.pi * freq_hz
+    fade_in_s, fade_out_s = 2.0, 1.5
+
+    def ref_pos(t: float) -> float:
+        if t <= 0.0 or t >= duration_s:
+            return 0.0
+        fade = min(1.0, t / fade_in_s, (duration_s - t) / fade_out_s)
+        env = 0.5 - 0.5 * math.cos(math.pi * fade)
+        amp = amp_start_deg + (amp_end_deg - amp_start_deg) * (t / max(duration_s, 1e-3))
+        return env * amp * math.sin(w * t)
+
+    def ref_state(t: float) -> tuple[float, float]:
+        h = 1e-4
+        return ref_pos(t), (ref_pos(t + h) - ref_pos(t - h)) / (2.0 * h)
+
+    LOGGER.info(f"Phase C: Fixed-frequency amplitude ramp ({freq_hz:g} Hz, +/-{amp_start_deg:g} -> +/-{amp_end_deg:g} deg in {duration_s:g} s)")
+    hold_nm = 0.0
+    if not dry_run:
+        joint.move_to(0.0, speed_deg_s=GRAVITY_MOVE_SPEED_DEG_S, accel_deg_s2=GRAVITY_MOVE_ACCEL_DEG_S2, phase="amp_sweep_to_0")
+        hold_nm = joint.measure_holding_torque(torque_nm=joint.compensation_torque(0.0, 0.0))
+        LOGGER.info(f"  Phase C holding torque at 0 deg: {hold_nm:+.3f} Nm")
+        joint.hold_until_enter(
+            0.0,
+            f"Phase C (Amplitude Ramp, {freq_hz:g} Hz, +/-{amp_start_deg:g} -> +/-{amp_end_deg:g} deg, {duration_s:g} s):\n"
+            "  Keep your forearm COMPLETELY RELAXED while the motor ramps amplitude.\n"
+            "  Press Enter to start (Enter or Ctrl-C stops immediately).",
+            phase="amp_sweep_ready",
+        )
+    else:
+        run_zero_torque_wait(joint, f"Phase C DRY RUN (Amplitude Ramp, {freq_hz:g} Hz): Press Enter to start.", dry_run, rotor_at_start)
+
+    joint.phase = "amp_sweep"
+    lead = 0.5 / joint.config.rate_hz
+    envelope = max(amp_start_deg, amp_end_deg) + CHIRP_ENVELOPE_MARGIN_DEG
+    over_t, next_print = 0, 0.0
+
+    for t in joint.loop():
+        target, target_vel = ref_state(t + lead)
+        if dry_run:
+            joint.idle()
+        else:
+            extra_hold = hold_nm - joint.compensation_torque(0.0, 0.0)
+            ff = joint.compensation_torque(target, target_vel, target - joint.angle_deg) + extra_hold
+            joint.command_position(target, target_vel, ff, kp=CHIRP_KP, kd=CHIRP_KD)
+        joint.update()
+        _append_row(rows, time.monotonic() - t0_mono, t0_mono, joint, "amp_sweep", 1)
+
+        if not dry_run and joint.fresh:
+            over_t = over_t + 1 if abs(joint.torque_nm - hold_nm) > CHIRP_TORQUE_ABORT_NM else 0
+            if over_t >= GUARD_CONFIRM_TICKS:
+                raise JointError(f"Phase C amp_sweep torque {joint.torque_nm:+.3f} Nm exceeded +/-{CHIRP_TORQUE_ABORT_NM:g} Nm guard")
+            if abs(joint.angle_deg) > envelope:
+                raise JointError(f"Phase C amp_sweep angle {joint.angle_deg:+.2f} deg exceeded +/-{envelope:.1f} deg envelope")
+            if math.isfinite(rotor_at_start) and (joint.motor.rotor_temperature - rotor_at_start) > TEMP_RISE_ABORT_C:
+                raise JointError(f"rotor temperature rose by more than {TEMP_RISE_ABORT_C:g} C")
+
+        if enter_pressed():
+            print()
+            LOGGER.info(f"  Phase C amp_sweep stopped early by operator at t = {t:.1f} s")
+            break
+        if t >= next_print:
+            cur_amp = amp_start_deg + (amp_end_deg - amp_start_deg) * min(1.0, t / max(duration_s, 1e-3))
+            print(f"  [Phase C AmpSweep {freq_hz:g} Hz] t {t:5.1f}/{duration_s:4.0f} s | A {cur_amp:4.1f} deg | angle {joint.angle_deg:+6.2f} deg | tau {joint.torque_nm:+.3f} Nm", end="\r")
+            next_print = t + 0.5
+        if t >= duration_s + 0.5:
+            print()
+            break
+
+    if not dry_run:
+        joint.command_torque(0.0)
+        joint.update()
+
+
 def run_phase_c_free_decay(
     joint: Joint,
     rows: list,
@@ -580,11 +781,22 @@ def main() -> None:
                 )
 
             if not args.skip_phase_c:
-                if args.phase_c_mode == "chirp":
+                if args.phase_c_mode == "multi_amp_sweep":
+                    run_phase_c_multi_amp_sweep(
+                        joint, rows, t0_mono, step_duration_s=args.step_duration,
+                        dry_run=args.dry_run, rotor_at_start=rotor_at_start,
+                    )
+                elif args.phase_c_mode == "chirp":
                     run_phase_c_relaxed_chirp(
                         joint, rows, t0_mono, args.chirp_duration, args.chirp_amp,
                         args.dry_run, rotor_at_start,
                         f0_hz=args.chirp_f0, f1_hz=args.chirp_f1,
+                    )
+                elif args.phase_c_mode == "amp_sweep":
+                    run_phase_c_amp_sweep(
+                        joint, rows, t0_mono, args.amp_sweep_freq,
+                        args.amp_sweep_start, args.amp_sweep_end, args.amp_sweep_duration,
+                        args.dry_run, rotor_at_start,
                     )
                 elif args.decay_trials > 0:
                     run_phase_c_free_decay(
