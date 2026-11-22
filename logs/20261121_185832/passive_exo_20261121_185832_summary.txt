@@ -1,0 +1,7 @@
+Passive Exo Analysis: passive_exo_20261121_185832_passive.csv
+  sampling : 500.0 Hz effective, 100.00% fresh replies
+  exo base : J_exo = 2.135 e-3 kg m^2, coulomb = 0.4617 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured, 2 hold angles):
+    total (exo + arm) : m*g*l = 4.236 Nm (horizontal at -107.9 deg)
+    human forearm     : m*g*l = 4.040 Nm (horizontal at -107.3 deg)

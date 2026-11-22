@@ -1,0 +1,29 @@
+Passive Exo Analysis: passive_exo_20261121_191159_passive.csv
+  sampling : 500.0 Hz effective, 99.97% fresh replies
+  exo base : J_exo = 2.009 e-3 kg m^2, coulomb = 0.4475 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.178 Nm):
+    total (exo + arm) : m*g*l = 1.581 Nm (horizontal at -157.2 deg)
+    human forearm     : m*g*l = 1.432 Nm (horizontal at -161.2 deg)
+
+  [Phase B] Active Zero-Torque Swing Transparency (29.9 s, 14972 samples):
+    kinematics        : angle [-35.3, +56.6] deg, peak |v| = 355.4 deg/s, peak |a| = 6330 deg/s^2
+    motor 0-Nm ripple : RMS = 0.0530 Nm, peak = 0.2320 Nm
+    interaction tau_h : RMS = 0.4708 Nm, peak = 1.0558 Nm
+      breakdown (RMS) : inertia 0.0605 Nm | friction 0.4294 Nm | gravity 0.1201 Nm
+    mechanical work   : 30.225 J (1.009 W mean)
+    speed-binned resistance:
+      slow (<60 deg/s)       RMS tau_h = 0.4125 Nm, peak = 0.9751 Nm (n=4036)
+      medium (60-150 deg/s)  RMS tau_h = 0.4883 Nm, peak = 1.0420 Nm (n=5437)
+      fast (>=150 deg/s)     RMS tau_h = 0.4929 Nm, peak = 1.0558 Nm (n=5499)
+
+  [Phase C] Relaxed Motor-Driven Chirp System ID (1 trial(s), 14127 samples):
+    J_total           : 33.209 +/- 0.270 e-3 kg m^2
+    J_human (forearm) : 31.201 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.3550 +/- 0.0029 Nm
+    coulomb_cuff      : -0.0925 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.1529 +/- 0.0032 Nm s/rad
+    viscous_cuff      : 0.1529 Nm s/rad  (skin-cuff + passive elbow)
+    passive stiffness : k_eff = -0.125 Nm/rad, static offset tau_0 = -1.181 Nm
+    fit quality       : R^2 = 0.8854, residual RMS = 0.1952 Nm, cond(X) = 71.2
+    WARNING: Negative interface friction component (coulomb -0.0925 Nm, viscous +0.1529 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor).

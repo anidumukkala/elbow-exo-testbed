@@ -85,10 +85,10 @@ GRAVITY_HOLD_KD = 0.4
 DEFAULT_SWING_DURATION_S = 30.0
 
 # ---- Phase C Default: Gentle Motor-Driven Relaxed Chirp ----
-DEFAULT_CHIRP_F0_HZ = 0.5
-DEFAULT_CHIRP_F1_HZ = 6.0
+DEFAULT_CHIRP_F0_HZ = 0.25
+DEFAULT_CHIRP_F1_HZ = 2.0
 DEFAULT_CHIRP_DURATION_S = 30.0
-DEFAULT_CHIRP_AMP_DEG = 8.0
+DEFAULT_CHIRP_AMP_DEG = 12.0
 DEFAULT_CHIRP_MAX_SPEED_DEG_S = 90.0
 DEFAULT_CHIRP_MAX_ACCEL_DEG_S2 = 1200.0
 CHIRP_KP = 20.0
@@ -129,7 +129,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--chirp-duration", type=float, default=DEFAULT_CHIRP_DURATION_S,
                    help="Phase C relaxed chirp duration in seconds (default: 30)")
     p.add_argument("--chirp-amp", type=float, default=DEFAULT_CHIRP_AMP_DEG,
-                   help="Phase C relaxed chirp amplitude in deg around 0 deg (default: 8.0)")
+                   help="Phase C relaxed chirp amplitude in deg around 0 deg (default: 12.0)")
+    p.add_argument("--chirp-f0", type=float, default=DEFAULT_CHIRP_F0_HZ,
+                   help="Phase C relaxed chirp start frequency in Hz (default: 0.25)")
+    p.add_argument("--chirp-f1", type=float, default=DEFAULT_CHIRP_F1_HZ,
+                   help="Phase C relaxed chirp end frequency in Hz (default: 2.0)")
     p.add_argument("--decay-trials", type=int, default=DEFAULT_DECAY_TRIALS,
                    help="Number of Phase C legacy free-decay trials (when --phase-c-mode decay)")
     p.add_argument("--decay-duration", type=float, default=DEFAULT_DECAY_DURATION_S,
@@ -369,18 +373,20 @@ def run_phase_c_relaxed_chirp(
     amplitude_deg: float,
     dry_run: bool,
     rotor_at_start: float,
+    f0_hz: float = DEFAULT_CHIRP_F0_HZ,
+    f1_hz: float = DEFAULT_CHIRP_F1_HZ,
 ) -> None:
     """Phase C (default): gentle motor-driven chirp around 0 deg with relaxed human forearm."""
     chirp = Chirp(
-        DEFAULT_CHIRP_F0_HZ,
-        DEFAULT_CHIRP_F1_HZ,
+        f0_hz,
+        f1_hz,
         duration_s,
         amplitude_deg,
         DEFAULT_CHIRP_MAX_SPEED_DEG_S,
         DEFAULT_CHIRP_MAX_ACCEL_DEG_S2,
     )
     LOGGER.info(
-        f"Phase C: Relaxed motor-driven chirp ({DEFAULT_CHIRP_F0_HZ:g} -> {DEFAULT_CHIRP_F1_HZ:g} Hz, "
+        f"Phase C: Relaxed motor-driven chirp ({f0_hz:g} -> {f1_hz:g} Hz, "
         f"{duration_s:g} s, +/-{amplitude_deg:g} deg around 0 deg)"
     )
 
@@ -417,7 +423,8 @@ def run_phase_c_relaxed_chirp(
             joint.idle()
         else:
             # Feedforward: exo compensation + static extra arm holding torque at 0 deg
-            ff = joint.compensation_torque(target, target_vel, target - joint.angle_deg)
+            extra_hold = hold_nm - joint.compensation_torque(0.0, 0.0)
+            ff = joint.compensation_torque(target, target_vel, target - joint.angle_deg) + extra_hold
             joint.command_position(target, target_vel, ff, kp=CHIRP_KP, kd=CHIRP_KD)
         joint.update()
         _append_row(rows, time.monotonic() - t0_mono, t0_mono, joint, "relaxed_chirp", 1)
@@ -531,7 +538,7 @@ def run_phase_c_free_decay(
 
 def main() -> None:
     args = parse_args()
-    cfg = replace(JointConfig(), rate_hz=args.rate_hz)
+    cfg = replace(JointConfig(), rate_hz=args.rate_hz, track_tol_deg=15.0, kp=30.0)
     frf_path = args.exo_frf or _find_latest_frf()
 
     print(
@@ -577,6 +584,7 @@ def main() -> None:
                     run_phase_c_relaxed_chirp(
                         joint, rows, t0_mono, args.chirp_duration, args.chirp_amp,
                         args.dry_run, rotor_at_start,
+                        f0_hz=args.chirp_f0, f1_hz=args.chirp_f1,
                     )
                 elif args.decay_trials > 0:
                     run_phase_c_free_decay(
