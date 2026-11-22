@@ -1,0 +1,37 @@
+Passive Exo Analysis: passive_exo_20261122_163809_passive.csv
+  sampling : 500.0 Hz effective, 99.98% fresh replies
+  exo base : J_exo = 0.799 e-3 kg m^2, coulomb = 0.4446 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.153 Nm):
+    total (exo + arm) : m*g*l = 1.348 Nm (horizontal at -162.5 deg)
+    human forearm     : m*g*l = 1.216 Nm (horizontal at -168.1 deg)
+
+  [Phase B] Active Zero-Torque Swing Transparency (29.9 s, 14971 samples):
+    kinematics        : angle [-26.2, +58.1] deg, peak |v| = 254.9 deg/s, peak |a| = 4784 deg/s^2
+    motor 0-Nm ripple : RMS = 0.0389 Nm, peak = 0.1631 Nm
+    interaction tau_h : RMS = 0.4496 Nm, peak = 0.8007 Nm
+      breakdown (RMS) : inertia 0.0175 Nm | friction 0.4210 Nm | gravity 0.1053 Nm
+    mechanical work   : 20.998 J (0.701 W mean)
+    speed-binned resistance:
+      slow (<60 deg/s)       RMS tau_h = 0.4081 Nm, peak = 0.7449 Nm (n=5595)
+      medium (60-150 deg/s)  RMS tau_h = 0.4724 Nm, peak = 0.8007 Nm (n=6477)
+      fast (>=150 deg/s)     RMS tau_h = 0.4733 Nm, peak = 0.7933 Nm (n=2899)
+
+  [Phase C] Multi-Frequency Amplitude-Sweep System ID (fn Hz = step freq) (6 trial(s), 19067 samples):
+    J_total           : 27.490 +/- 0.203 e-3 kg m^2
+    J_human (forearm) : 26.691 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.3179 +/- 0.0026 Nm
+    coulomb_cuff      : -0.1266 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.2182 +/- 0.0030 Nm s/rad
+    viscous_cuff      : 0.2182 Nm s/rad  (skin-cuff + passive elbow)
+    passive stiffness : k_eff = +0.208 Nm/rad, static offset tau_0 = +0.125 Nm
+    fit quality       : R^2 = 0.8991, residual RMS = 0.1797 Nm, cond(X) = 84.1
+    per-trial breakdown:
+      trial  dur s   span  J_tot e-3    tc Nm        b     R^2   fn Hz
+          1   7.96   37.5      5.248   0.3036   0.2046   0.933    0.52
+          2   7.96   32.6     11.551   0.2972   0.1842   0.938    0.73
+          3   7.96   29.6     18.162   0.2941   0.1841   0.943    1.02
+          4   7.96   25.6     20.724   0.3207   0.1664   0.934    1.24
+          5   7.96   22.4     27.417   0.3539   0.1519   0.951    1.50
+          6   7.96   17.9     33.594   0.4888   0.2361   0.933    2.00
+    WARNING: Negative interface friction component (coulomb -0.1266 Nm, viscous +0.2182 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor).

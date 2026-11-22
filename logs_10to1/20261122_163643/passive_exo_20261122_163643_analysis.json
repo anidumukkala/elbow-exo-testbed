@@ -1,0 +1,56 @@
+{
+  "csv_path": "/home/anidumukkala3/elbow-exo-testbed/logs/20261122_163643/passive_exo_20261122_163643_passive.csv",
+  "sample_rate_hz": 500.0000000002771,
+  "fresh_fraction": 1.0,
+  "exo_baseline": {
+    "inertia_kg_m2": 0.0007987362423738116,
+    "coulomb_nm": 0.44455834655757565,
+    "viscous_nm_s_rad": 0.0,
+    "gravity_cos_nm": -0.09603006074402014,
+    "gravity_sin_nm": -0.1547667057556087,
+    "source_cal": "/home/anidumukkala3/elbow-exo-testbed/calibration/joint_cal.json",
+    "source_frf": "/home/anidumukkala3/elbow-exo-testbed/logs/20261122_150314/free_chirp_20261122_150314_frf.csv"
+  },
+  "gravity_total": {
+    "gravity_cos_nm": -0.2860503749804705,
+    "gravity_sin_nm": 1.6720334651548872,
+    "mgl_nm": 1.696325654355415,
+    "horizontal_angle_deg": 99.70813895796496,
+    "fit_rms_nm": 2.482534153247273e-16,
+    "n_angles": 2,
+    "hold_angles_deg": [
+      -23.464025265957446,
+      0.0911752997340426
+    ],
+    "hold_torques_nm": [
+      -0.9281558404255318,
+      -0.28338929172872335
+    ],
+    "source": "measured",
+    "bidirectional": false,
+    "stiction_halfwidth_nm": NaN
+  },
+  "gravity_arm": {
+    "gravity_cos_nm": -0.19002031423645033,
+    "gravity_sin_nm": 1.826800170910496,
+    "mgl_nm": 1.8366563598727816,
+    "horizontal_angle_deg": 95.93844302805698,
+    "fit_rms_nm": 2.482534153247273e-16,
+    "n_angles": 2,
+    "hold_angles_deg": [
+      -23.464025265957446,
+      0.0911752997340426
+    ],
+    "hold_torques_nm": [
+      -0.9016904332841896,
+      -0.18711307099625518
+    ],
+    "source": "measured",
+    "bidirectional": false,
+    "stiction_halfwidth_nm": NaN
+  },
+  "transparency": null,
+  "passive_id": null,
+  "loadcell": null,
+  "notes": []
+}

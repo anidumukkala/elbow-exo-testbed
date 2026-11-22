@@ -28,7 +28,7 @@ _frf.csv (responses per frequency), _summary.txt.
 
 from exo.chirp import Chirp, analyse, save_results, summarize
 from exo.joint import Joint, JointError
-from exo.logs import LOGGER
+from exo.logs import LOGGER, ROOT
 
 # ---- Motor ---- (the CAN interface is JointConfig.channel in exo/config.py)
 MOTOR_ID = 0x02
@@ -67,7 +67,7 @@ def main() -> None:
     rows = []  # one row per tick of the sweep, columns as exo.chirp.COLUMNS
     stem = None
     try:
-        with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="free_chirp", rate_hz=RATE_HZ) as joint:
+        with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="free_chirp_10to1", rate_hz=RATE_HZ, log_dir=ROOT / "logs_10to1") as joint:
             stem = joint.log_stem
             LOGGER.debug(f"settings: {settings}")  # in the .log file
 

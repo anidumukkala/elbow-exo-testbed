@@ -57,7 +57,7 @@ class PushResult:
 class Joint:
     def __init__(self, channel: Optional[str] = None, motor_id: int = 0x05, feedback_id: int = 0x15, *,
                  log_name: str = "joint", rate_hz: Optional[float] = None,
-                 config: JointConfig = JointConfig()) -> None:
+                 config: JointConfig = JointConfig(), log_dir: Optional[Path] = None) -> None:
         """
         Args:
             channel: CAN interface of the motor (default: config.channel).
@@ -71,6 +71,7 @@ class Joint:
                                  torque_trip_nm=self.config.torque_trip_nm,
                                  can_timeout_units=self.config.timeout_unhomed)
         self.log_name = log_name
+        self.log_dir = Path(log_dir) if log_dir is not None else LOG_DIR
         self.log_stem: Optional[Path] = None  # logs/<log_name>_<time>, set when the block is entered
         self.calibration: Optional[Calibration] = None  # set by homing or resume()
         self.compensation: Optional[Compensation] = None  # friction / gravity feedforward
@@ -399,7 +400,7 @@ class Joint:
         if two runs start within the same second). Returns the path without extension."""
         LOGGER.reset()  # one shared logger: drop what an earlier run in this Python session tracked
         ts = f"{datetime.now():%Y%m%d_%H%M%S}"
-        run_dir = LOG_DIR / ts
+        run_dir = self.log_dir / ts
         run_dir.mkdir(parents=True, exist_ok=True)
         LOGGER.set_log_path(run_dir)
         run = base = f"{name}_{ts}"

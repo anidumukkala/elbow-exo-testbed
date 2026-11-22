@@ -57,7 +57,8 @@ from typing import Optional
 from exo.chirp import Chirp
 from exo.config import JointConfig
 from exo.joint import Joint, JointError
-from exo.logs import LOG_DIR, LOGGER
+from exo.logs import LOGGER, ROOT
+LOG_DIR = ROOT / "logs_10to1"
 from exo.loop import enter_pressed
 from exo.passive import (
     ExoBaseline,
@@ -759,7 +760,8 @@ def main() -> None:
             channel=args.channel,
             motor_id=args.motor_id,
             feedback_id=args.feedback_id,
-            log_name="passive_exo",
+            log_name="passive_exo_10to1",
+            log_dir=LOG_DIR,
             rate_hz=args.rate_hz,
             config=cfg,
         ) as joint:

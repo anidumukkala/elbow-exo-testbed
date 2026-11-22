@@ -1,0 +1,30 @@
+[2026-11-22 17:19:29,639] INFO: Connecting to motor 0x04 on can0 (CAN FD)
+[2026-11-22 17:19:29,756] WARNING: firmware PMAX/VMAX/TMAX = 12.5/3.5999999046325684/27.0, expected 12.5/30/10; using the firmware values
+[2026-11-22 17:19:29,756] WARNING: gear ratio register Gr = 40.0, expected 10.0
+[2026-11-22 17:19:29,756] DEBUG: registers: {'TIMEOUT': 2001, 'CTRL_MODE': 1, 'sw_ver': 925970741, 'Gr': 40.0, 'PMAX': 12.5, 'VMAX': 3.5999999046325684, 'TMAX': 27.0, 'm_off': 0.0}
+[2026-11-22 17:19:29,827] INFO: Motor ready: position -1.4590 rad, status DISABLED, MOS 27 C, rotor 25 C
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: t_s
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: tick_ms
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: rtt_ms
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: fresh
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: phase
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: mode
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: lag_deg
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: angle_deg
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: torque_nm
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: motor_rad
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: t_mos_c
+[2026-11-22 17:19:29,827] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-22 17:19:29,828] DEBUG: Started tracking variable: status
+[2026-11-22 17:19:29,828] DEBUG: settings: chirp 0.5 -> 10 Hz in 60 s at 500 Hz; amplitude 3 deg limited by 120 deg/s and 2500 deg/s^2 (0.63 deg at 10 Hz); kp 20, kd 0.3
+[2026-11-22 17:19:29,828] INFO: Resumed homing from 2026-11-22T17:18:30-05:00 (auto): joint at +0.36 deg, stops at +/-80.8 deg, with friction/gravity compensation
+[2026-11-22 17:19:30,785] INFO: Holding torque at 0 deg: -0.111 Nm
+[2026-11-22 17:20:04,929] ERROR: ABORTED: JointError: torque +0.916 Nm (holding -0.111) at 2.40 Hz: more than 1 Nm extra
+[2026-11-22 17:20:04,930] INFO: Motor disabled
+[2026-11-22 17:20:05,024] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs/20261122_171929/free_chirp_20261122_171929.csv
+[2026-11-22 17:20:05,171] INFO: Results: /home/anidumukkala3/elbow-exo-testbed/logs/20261122_171929/free_chirp_20261122_171929_chirp.csv, _frf.csv, _summary.txt

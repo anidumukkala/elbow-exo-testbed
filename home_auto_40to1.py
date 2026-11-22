@@ -23,19 +23,21 @@ Steps:
 Output: calibration/joint_cal.json and logs/home_auto_<time>.csv / .log.
 """
 
+from dataclasses import replace
 from exo.calibration import Calibration
+from exo.config import JointConfig
 from exo.compensation import run_identification
 from exo.joint import Joint, JointError
-from exo.logs import LOGGER
+from exo.logs import LOGGER, ROOT
 
 # ---- Motor ---- (the CAN interface is JointConfig.channel in exo/config.py)
-MOTOR_ID = 0x02
-FEEDBACK_ID = 0x12
+MOTOR_ID = 0x04
+FEEDBACK_ID = 0x14
 
 # ---- Homing settings ----
 FIRST_DIRECTION = +1  # which stop first: +1 = positive joint angle
-STOP_TORQUE_NM = 1.0  # most the motor pushes against a stop (below the 1.5 Nm trip)
-TORQUE_RAMP_NM_S = 0.25  # how fast the push rises while testing whether the joint moves
+STOP_TORQUE_NM = 2.0  # most the motor pushes against a stop (below the 1.5 Nm trip)
+TORQUE_RAMP_NM_S = 0.5  # how fast the push rises while testing whether the joint moves
 APPROACH_SPEED_DEG_S = 15.0  # speed toward a stop
 APPROACH_MARGIN_NM = 0.10  # approach push = largest breakaway torque + this ...
 MIN_APPROACH_NM = 0.15  # ... but at least this
@@ -85,7 +87,7 @@ def find_stop(joint: Joint, direction: int, push_nm: float) -> float:
 
 
 def main() -> None:
-    with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="home_auto") as joint:
+    with Joint(motor_id=MOTOR_ID, feedback_id=FEEDBACK_ID, log_name="home_auto_40to1", config=replace(JointConfig(), torque_trip_nm=8.0), log_dir=ROOT / "logs_40to1") as joint:
         print("Automatic homing: the joint will move by itself. Keep hands clear; nobody wearing the exo.")
         input("Press Enter to start (Ctrl-C to cancel)... ")
 
