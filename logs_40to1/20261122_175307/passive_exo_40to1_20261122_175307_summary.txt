@@ -1,0 +1,25 @@
+Passive Exo Analysis: passive_exo_40to1_20261122_175307_passive.csv
+  sampling : 500.0 Hz effective, 99.97% fresh replies
+  exo base : J_exo = 17.013 e-3 kg m^2, coulomb = 0.4970 Nm, viscous = 0.2480 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.926 Nm):
+    total (exo + arm) : m*g*l = 2.551 Nm (horizontal at +163.4 deg)
+    human forearm     : m*g*l = 2.469 Nm (horizontal at +161.4 deg)
+
+  [Phase C] Multi-Frequency Amplitude-Sweep System ID (fn Hz = step freq) (6 trial(s), 18864 samples):
+    J_total           : 72.665 +/- 0.489 e-3 kg m^2
+    J_human (forearm) : 55.652 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.7056 +/- 0.0054 Nm
+    coulomb_cuff      : 0.2086 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.4974 +/- 0.0061 Nm s/rad
+    viscous_cuff      : 0.2494 Nm s/rad  (skin-cuff + passive elbow)
+    passive stiffness : k_eff = +0.985 Nm/rad, static offset tau_0 = -0.024 Nm
+    fit quality       : R^2 = 0.9105, residual RMS = 0.3751 Nm, cond(X) = 87.4
+    per-trial breakdown:
+      trial  dur s   span  J_tot e-3    tc Nm        b     R^2   fn Hz
+          1   7.96   34.3     31.301   0.8515   0.2831   0.954    0.55
+          2   7.96   30.6     53.602   0.6926   0.4493   0.951    0.74
+          3   7.96   28.8     71.959   0.5896   0.4367   0.881    1.03
+          4   7.96   25.4     72.880   0.6138   0.4213   0.971    1.24
+          5   7.96   22.5     70.406   0.7318   0.4301   0.983    1.51
+          6   7.96   18.1     76.280   0.8891   0.6980   0.977    2.00

@@ -1,0 +1,173 @@
+{
+  "csv_path": "/home/anidumukkala3/elbow-exo-testbed/logs_10to1/20261122_181808/passive_exo_10to1_20261122_181808_passive.csv",
+  "sample_rate_hz": 500.0000000002771,
+  "fresh_fraction": 0.999679555650502,
+  "exo_baseline": {
+    "inertia_kg_m2": 0.0020947982978932788,
+    "coulomb_nm": 0.44182956514229355,
+    "viscous_nm_s_rad": 0.0,
+    "gravity_cos_nm": -0.10177823131442014,
+    "gravity_sin_nm": -0.16299781003437452,
+    "source_cal": "/home/anidumukkala3/elbow-exo-testbed/calibration/joint_cal.json",
+    "source_frf": "/home/anidumukkala3/elbow-exo-testbed/logs_10to1/20261122_181251/free_chirp_10to1_20261122_181251_frf.csv"
+  },
+  "gravity_total": {
+    "gravity_cos_nm": -0.9897862872211364,
+    "gravity_sin_nm": -1.0078301722307685,
+    "mgl_nm": 1.4125857674596975,
+    "horizontal_angle_deg": -134.4824780619603,
+    "fit_rms_nm": 0.012442735735494731,
+    "n_angles": 3,
+    "hold_angles_deg": [
+      -24.534512499999998,
+      1.6168835372340427,
+      27.31021037234042
+    ],
+    "hold_torques_nm": [
+      -0.4725859521276595,
+      -1.0347713882978722,
+      -1.332364634858156
+    ],
+    "source": "measured_bidirectional",
+    "bidirectional": true,
+    "stiction_halfwidth_nm": 0.14049972048463347
+  },
+  "gravity_arm": {
+    "gravity_cos_nm": -0.8880080559067163,
+    "gravity_sin_nm": -0.844832362196394,
+    "mgl_nm": 1.225683494043044,
+    "horizontal_angle_deg": -136.42729432657345,
+    "fit_rms_nm": 0.012442735735494731,
+    "n_angles": 3,
+    "hold_angles_deg": [
+      -24.534512499999998,
+      1.6168835372340427,
+      27.31021037234042
+    ],
+    "hold_torques_nm": [
+      -0.44768056442730886,
+      -0.9284345024646986,
+      -1.1671463813288043
+    ],
+    "source": "measured_bidirectional",
+    "bidirectional": true,
+    "stiction_halfwidth_nm": 0.14049972048463347
+  },
+  "transparency": null,
+  "passive_id": {
+    "j_total_kg_m2": 0.031444665217389624,
+    "j_total_se_kg_m2": 0.0002056849700266165,
+    "coulomb_total_nm": 0.3606748339240961,
+    "coulomb_total_se_nm": 0.0026518501892821194,
+    "viscous_total_nm_s_rad": 0.17200368204802655,
+    "viscous_total_se_nm_s_rad": 0.002951547231772412,
+    "j_human_kg_m2": 0.029349866919496346,
+    "coulomb_cuff_nm": -0.08115473121819744,
+    "viscous_cuff_nm_s_rad": 0.17200368204802655,
+    "r2": 0.9028266698479968,
+    "rms_residual_nm": 0.1785859636228735,
+    "cond_number": 83.05276367108436,
+    "n_trials": 6,
+    "n_samples": 18642,
+    "method": "multi_amp_sweep",
+    "k_eff_nm_rad": 0.5973151580194881,
+    "tau_offset_nm": -0.0956114079508454,
+    "per_trial": [
+      {
+        "trial": 1,
+        "duration_s": 7.962000000009731,
+        "n_samples": 3172,
+        "angle_span_deg": 38.09205832226778,
+        "peak_speed_deg_s": 67.75309906416147,
+        "j_total_kg_m2": 0.00944962918614297,
+        "coulomb_total_nm": 0.34503186569082006,
+        "viscous_total_nm_s_rad": 0.17696102164088853,
+        "r2": 0.9511723650311157,
+        "rms_residual_nm": 0.10014939454781994,
+        "cond_number": 14.077718097745185,
+        "natural_freq_hz": 0.5258739655343755,
+        "damping_ratio": NaN
+      },
+      {
+        "trial": 2,
+        "duration_s": 7.962000000009731,
+        "n_samples": 3177,
+        "angle_span_deg": 32.937987876743115,
+        "peak_speed_deg_s": 84.96050365410103,
+        "j_total_kg_m2": 0.005182997549682753,
+        "coulomb_total_nm": 0.32159187348156176,
+        "viscous_total_nm_s_rad": 0.16481028110442658,
+        "r2": 0.9233165448630908,
+        "rms_residual_nm": 0.12316949745499885,
+        "cond_number": 16.61307938930821,
+        "natural_freq_hz": 0.7314736833986205,
+        "damping_ratio": NaN
+      },
+      {
+        "trial": 3,
+        "duration_s": 7.960000000009728,
+        "n_samples": 3177,
+        "angle_span_deg": 29.57835575026268,
+        "peak_speed_deg_s": 102.24000034919044,
+        "j_total_kg_m2": 0.020357708031579172,
+        "coulomb_total_nm": 0.30167130976028905,
+        "viscous_total_nm_s_rad": 0.1940362997022478,
+        "r2": 0.9327391589774038,
+        "rms_residual_nm": 0.12829751496523864,
+        "cond_number": 19.448523648413065,
+        "natural_freq_hz": 1.0247804780709409,
+        "damping_ratio": NaN
+      },
+      {
+        "trial": 4,
+        "duration_s": 7.959999999981449,
+        "n_samples": 3176,
+        "angle_span_deg": 26.48437329190466,
+        "peak_speed_deg_s": 104.39024075931441,
+        "j_total_kg_m2": 0.027483880788096764,
+        "coulomb_total_nm": 0.3587481158802455,
+        "viscous_total_nm_s_rad": 0.15104541905478236,
+        "r2": 0.9343279056267412,
+        "rms_residual_nm": 0.14343482192348353,
+        "cond_number": 24.390535229043905,
+        "natural_freq_hz": 1.2423496837903218,
+        "damping_ratio": NaN
+      },
+      {
+        "trial": 5,
+        "duration_s": 7.959999999981449,
+        "n_samples": 3173,
+        "angle_span_deg": 23.755615075646702,
+        "peak_speed_deg_s": 116.79363346964381,
+        "j_total_kg_m2": 0.035837221018631495,
+        "coulomb_total_nm": 0.43103858201643047,
+        "viscous_total_nm_s_rad": 0.12125363544422825,
+        "r2": 0.9490974150711511,
+        "rms_residual_nm": 0.15258952243670912,
+        "cond_number": 28.944242344255,
+        "natural_freq_hz": 1.5057830518128028,
+        "damping_ratio": NaN
+      },
+      {
+        "trial": 6,
+        "duration_s": 7.147999999983341,
+        "n_samples": 2767,
+        "angle_span_deg": 17.884988814287688,
+        "peak_speed_deg_s": 124.04786428278362,
+        "j_total_kg_m2": 0.0371593139449109,
+        "coulomb_total_nm": 0.510581963162035,
+        "viscous_total_nm_s_rad": 0.1281997403793525,
+        "r2": 0.9278786193713485,
+        "rms_residual_nm": 0.22989847165352964,
+        "cond_number": 39.58638630294728,
+        "natural_freq_hz": 2.029521085647808,
+        "damping_ratio": NaN
+      }
+    ],
+    "warnings": [
+      "Negative interface friction component (coulomb -0.0812 Nm, viscous +0.1720 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor)."
+    ]
+  },
+  "loadcell": null,
+  "notes": []
+}

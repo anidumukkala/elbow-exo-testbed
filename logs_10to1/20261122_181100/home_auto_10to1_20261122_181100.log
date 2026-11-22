@@ -1,0 +1,44 @@
+[2026-11-22 18:11:00,577] INFO: Connecting to motor 0x02 on can0 (CAN FD)
+[2026-11-22 18:11:00,694] DEBUG: registers: {'TIMEOUT': 0, 'CTRL_MODE': 1, 'sw_ver': 925970485, 'Gr': 10.0, 'PMAX': 12.5, 'VMAX': 30.0, 'TMAX': 10.0, 'm_off': 0.0}
+[2026-11-22 18:11:00,764] INFO: Motor ready: position -1.7618 rad, status DISABLED, MOS 23 C, rotor 22 C
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: t_s
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: tick_ms
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: rtt_ms
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: fresh
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: phase
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: mode
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: setpoint_deg
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: setpoint_vel_deg_s
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: lag_deg
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: angle_deg
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: velocity_deg_s
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: torque_nm
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: tau_ff_nm
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: tau_cmd_nm
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: motor_rad
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: t_mos_c
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: t_rotor_c
+[2026-11-22 18:11:00,765] DEBUG: Started tracking variable: status
+[2026-11-22 18:11:03,341] INFO: Step 1: breakaway test
+[2026-11-22 18:11:08,188] INFO:   resting on the + stop; testing downward first
+[2026-11-22 18:11:14,206] INFO:   moves up at +0.438 Nm, down at -0.542 Nm: static friction 0.490 Nm, gravity here -0.052 Nm
+[2026-11-22 18:11:14,207] INFO:   approach push 0.64 Nm
+[2026-11-22 18:11:14,207] INFO: Step 2: first stop (+ direction)
+[2026-11-22 18:11:16,853] INFO:   stop at +0.72 deg (from start), pushing 1 Nm
+[2026-11-22 18:11:17,604] INFO: Step 3: second stop (- direction)
+[2026-11-22 18:11:19,026] INFO:   stiff spot at -2.1 deg (moved at -0.77 Nm); continuing with 0.90 Nm
+[2026-11-22 18:11:37,732] INFO:   stop at -120.89 deg (from start), pushing 1 Nm
+[2026-11-22 18:11:38,484] INFO: Step 4: stroke 121.61 deg, stops at +/-60.81 deg; homed
+[2026-11-22 18:11:38,484] INFO: Step 5: friction / gravity identification
+[2026-11-22 18:11:39,555] INFO:   identification sweep to +51 deg at 10 deg/s
+[2026-11-22 18:11:50,261] INFO:   identification sweep to -51 deg at 10 deg/s
+[2026-11-22 18:12:00,712] INFO:   identification sweep to +51 deg at 30 deg/s
+[2026-11-22 18:12:04,508] INFO:   identification sweep to -51 deg at 30 deg/s
+[2026-11-22 18:12:08,327] WARNING: negative friction fitted (dry +0.4418 Nm, viscous -0.0617 Nm s/rad): too small to measure here; using 0 for it
+[2026-11-22 18:12:08,328] INFO:   dry friction     0.442 Nm
+[2026-11-22 18:12:08,328] INFO:   viscous friction 0.0000 Nm s/rad (0.000 Nm at 30 deg/s)
+[2026-11-22 18:12:08,328] INFO:   gravity          m*g*l = 0.192 Nm, largest at -122 deg (link horizontal there)
+[2026-11-22 18:12:08,328] INFO:   fit              4951 samples, residual 0.067 Nm rms
+[2026-11-22 18:12:48,875] INFO: Released.
+[2026-11-22 18:12:48,877] INFO: Motor disabled
+[2026-11-22 18:12:48,991] INFO: Log: /home/anidumukkala3/elbow-exo-testbed/logs_10to1/20261122_181100/home_auto_10to1_20261122_181100.csv

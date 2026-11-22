@@ -394,8 +394,7 @@ class Joint:
     # ------------------------------------------------------------------------------------------
     # Logging (one CSV row per update)
     # ------------------------------------------------------------------------------------------
-    @staticmethod
-    def _start_log(name: str) -> Path:
+    def _start_log(self, name: str) -> Path:
         """Messages and the per-tick CSV to logs/<name>_<date>_<time>.log / .csv (with _2, _3, ...
         if two runs start within the same second). Returns the path without extension."""
         LOGGER.reset()  # one shared logger: drop what an earlier run in this Python session tracked

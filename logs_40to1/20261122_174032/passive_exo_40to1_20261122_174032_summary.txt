@@ -1,0 +1,36 @@
+Passive Exo Analysis: passive_exo_40to1_20261122_174032_passive.csv
+  sampling : 500.0 Hz effective, 99.97% fresh replies
+  exo base : J_exo = 17.013 e-3 kg m^2, coulomb = 0.4970 Nm, viscous = 0.2480 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.369 Nm):
+    total (exo + arm) : m*g*l = 1.947 Nm (horizontal at -175.3 deg)
+    human forearm     : m*g*l = 1.838 Nm (horizontal at -176.9 deg)
+
+  [Phase B] Active Zero-Torque Swing Transparency (29.9 s, 14972 samples):
+    kinematics        : angle [-16.3, +51.4] deg, peak |v| = 178.8 deg/s, peak |a| = 2243 deg/s^2
+    motor 0-Nm ripple : RMS = 0.3292 Nm, peak = 1.1993 Nm
+    interaction tau_h : RMS = 1.0142 Nm, peak = 2.3750 Nm
+      breakdown (RMS) : inertia 0.2059 Nm | friction 0.8216 Nm | gravity 0.1119 Nm
+    mechanical work   : 38.616 J (1.290 W mean)
+    speed-binned resistance:
+      slow (<60 deg/s)       RMS tau_h = 0.8121 Nm, peak = 2.2727 Nm (n=6161)
+      medium (60-150 deg/s)  RMS tau_h = 1.1200 Nm, peak = 2.3750 Nm (n=8214)
+      fast (>=150 deg/s)     RMS tau_h = 1.3157 Nm, peak = 2.3394 Nm (n=597)
+
+  [Phase C] Multi-Frequency Amplitude-Sweep System ID (fn Hz = step freq) (6 trial(s), 18976 samples):
+    J_total           : 77.271 +/- 0.449 e-3 kg m^2
+    J_human (forearm) : 60.258 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.6789 +/- 0.0051 Nm
+    coulomb_cuff      : 0.1819 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.5015 +/- 0.0057 Nm s/rad
+    viscous_cuff      : 0.2535 Nm s/rad  (skin-cuff + passive elbow)
+    passive stiffness : k_eff = +1.146 Nm/rad, static offset tau_0 = -0.142 Nm
+    fit quality       : R^2 = 0.9175, residual RMS = 0.3612 Nm, cond(X) = 86.4
+    per-trial breakdown:
+      trial  dur s   span  J_tot e-3    tc Nm        b     R^2   fn Hz
+          1   7.96   35.5     50.603   0.7881   0.3501   0.964    0.54
+          2   7.96   31.5     55.494   0.6254   0.4375   0.955    0.73
+          3   7.96   29.1     67.896   0.5412   0.4690   0.956    1.02
+          4   7.96   25.9     82.832   0.6704   0.2765   0.957    1.25
+          5   7.96   24.1     83.019   0.7102   0.4281   0.984    1.51
+          6   7.96   17.6     76.296   0.9194   0.7538   0.961    2.02

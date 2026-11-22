@@ -1,0 +1,26 @@
+Passive Exo Analysis: passive_exo_10to1_20261122_181628_passive.csv
+  sampling : 500.0 Hz effective, 99.98% fresh replies
+  exo base : J_exo = 2.095 e-3 kg m^2, coulomb = 0.4418 Nm, viscous = 0.0000 Nm s/rad
+
+  [Phase A] Static Gravity (measured_bidirectional, 3 hold angles, stiction half-width 0.117 Nm):
+    total (exo + arm) : m*g*l = 1.386 Nm (horizontal at -149.5 deg)
+    human forearm     : m*g*l = 1.218 Nm (horizontal at -153.7 deg)
+
+  [Phase C] Multi-Frequency Amplitude-Sweep System ID (fn Hz = step freq) (6 trial(s), 19059 samples):
+    J_total           : 32.491 +/- 0.213 e-3 kg m^2
+    J_human (forearm) : 30.397 e-3 kg m^2  (J_total - J_exo)
+    coulomb_total     : 0.3414 +/- 0.0029 Nm
+    coulomb_cuff      : -0.1004 Nm  (skin-cuff + passive elbow)
+    viscous_total     : 0.2220 +/- 0.0031 Nm s/rad
+    viscous_cuff      : 0.2220 Nm s/rad  (skin-cuff + passive elbow)
+    passive stiffness : k_eff = +0.082 Nm/rad, static offset tau_0 = +0.095 Nm
+    fit quality       : R^2 = 0.9002, residual RMS = 0.1987 Nm, cond(X) = 86.3
+    per-trial breakdown:
+      trial  dur s   span  J_tot e-3    tc Nm        b     R^2   fn Hz
+          1   7.96   37.3      0.576   0.3391   0.1856   0.964    0.53
+          2   7.96   33.2     11.761   0.3079   0.1934   0.942    0.73
+          3   7.96   30.4     25.437   0.3291   0.1744   0.950    1.03
+          4   7.96   26.6     29.765   0.3674   0.1558   0.954    1.24
+          5   7.96   23.5     33.638   0.3968   0.1670   0.942    1.50
+          6   7.96   19.5     37.163   0.4807   0.2464   0.896    2.00
+    WARNING: Negative interface friction component (coulomb -0.1004 Nm, viscous +0.2220 Nm s/rad): possible subtle muscle assistance or exo baseline friction mismatch (e.g. cold vs warm motor).

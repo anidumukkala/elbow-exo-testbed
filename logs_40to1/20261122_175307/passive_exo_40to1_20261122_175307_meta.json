@@ -1,0 +1,14 @@
+{
+  "created": "2026-11-22T17:54:40-05:00",
+  "rig": "ume_40to1",
+  "subject": "S01",
+  "dry_run": false,
+  "rate_hz": 500.0,
+  "phase_c_mode": "multi_amp_sweep",
+  "motor_id": "0x04",
+  "feedback_id": "0x14",
+  "stop_limit_deg": 81.35152641630138,
+  "exo_frf": "/home/anidumukkala3/elbow-exo-testbed/logs_40to1/20261122_173234/free_chirp_40to1_20261122_173234_frf.csv",
+  "exo_inertia_override": null,
+  "rows": 28493
+}
